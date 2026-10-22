@@ -2,6 +2,7 @@ import { appendFile, mkdir, open, readdir, readFile, rm, stat, truncate } from '
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import type { z, ZodType } from 'zod'
 import { formatIssues, zhParse } from '../../shared/issues'
+import { GENERATED_MARKER } from '../../shared/labels'
 import { writeFileAtomic, type AtomicWriteOptions } from './atomic'
 import { WorkspaceError } from './errors'
 import { History, type ChangeInfo, type PreImage } from './history'
@@ -238,6 +239,18 @@ class WorkspaceImpl implements Workspace {
       const r = normalizeRel(rel)
       if ((await this.readTextRaw(r)) === text) return
       await this.writeRaw(r, text)
+    })
+  }
+
+  removeGenerated(rel: string): Promise<void> {
+    return this.queue.run(async () => {
+      const r = normalizeRel(rel)
+      const text = await this.readTextRaw(r)
+      if (text === null || !text.startsWith(GENERATED_MARKER)) return
+      const abs = this.abs(r)
+      this.mark(abs)
+      await rm(abs, { force: true })
+      this.mark(abs)
     })
   }
 

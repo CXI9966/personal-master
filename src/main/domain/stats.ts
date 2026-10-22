@@ -1,6 +1,6 @@
 import type { CheckResult, HeatmapWeights } from '../../shared/schema'
 import { checkinsByDay } from './checkin'
-import { datesBetween, isoWeekOf, logicalDateOf, minutesOfDay, shiftDate, startOfWeek, wallMinutesOf } from './day'
+import { clockOf, datesBetween, isoWeekOf, logicalDateOf, minutesOfDay, shiftDate, startOfWeek, wallMinutesOf } from './day'
 import { collectDays, dayScore, type Sources } from './heatmap'
 
 export interface WeeklyStats {
@@ -109,6 +109,37 @@ export function weeklyStats(
     if (weights.length > 1) stats.weightDelta = round1(last.kg - first.kg)
   }
   return stats
+}
+
+export interface WeekRow {
+  date: string
+  /** 打卡的 HH:mm，没打卡为 null */
+  wake: string | null
+  sleep: string | null
+  tasksDone: number
+  score: number
+}
+
+/** 一周里每天一行，供本周视图和周报使用 */
+export function weekRows(
+  weekStart: string,
+  sources: Sources,
+  config: { dayStartsAt: string; weights: HeatmapWeights },
+): WeekRow[] {
+  const start = startOfWeek(weekStart)
+  const days = collectDays(sources, config.dayStartsAt)
+  const picked = checkinsByDay(sources.checkins, config.dayStartsAt)
+  return datesBetween(start, shiftDate(start, 6)).map((date) => {
+    const data = days.get(date)
+    const checkins = picked.get(date)
+    return {
+      date,
+      wake: checkins?.wake ? clockOf(checkins.wake.at) : null,
+      sleep: checkins?.sleep ? clockOf(checkins.sleep.at) : null,
+      tasksDone: data?.tasksDone ?? 0,
+      score: data ? round1(dayScore(data, config.weights)) : 0,
+    }
+  })
 }
 
 /** 周报用的说明，全是正向口径：只说做到的，没有记录的项目不出现 */

@@ -29,6 +29,8 @@ export interface Workspace extends Tx {
    * fn 抛错时，已经写进去的部分会回滚。tx 内部不再排队，不要在 fn 里调用 Workspace 自己的方法（会死锁）。
    */
   batch<T>(label: string, fn: (tx: Tx) => Promise<T>): Promise<T>
+  /** 删掉过期的生成文件；只删第一行是“由 Butler 客户端生成”说明的，用户自己建的文件不会动 */
+  removeGenerated(rel: string): Promise<void>
   /** 最近一次可撤销的改动 */
   lastChange(): ChangeInfo | null
   /** 只有它还是最近一次改动时才成功 */

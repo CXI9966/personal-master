@@ -82,7 +82,7 @@ describe('应答格式', () => {
 
 describe('第一次运行到打卡的完整流程', () => {
   it('inspect → init → today:get → checkin:add → history:undo', async () => {
-    const { ipc, platform } = setup()
+    const { ipc, platform, session } = setup()
     const tmp = await makeTempDir()
     platform.picked = tmp.dir
     expect(await ipc.call('workspace:pick')).toEqual({ ok: true, data: tmp.dir })
@@ -97,7 +97,7 @@ describe('第一次运行到打卡的完整流程', () => {
     expect(last.data.label).toBe('起床打卡')
     expect(await ipc.call('history:undo', { changeId: last.data.id })).toEqual({ ok: true, data: true })
     expect(((await ipc.call('today:get')) as { ok: true; data: { wake: unknown } }).data.wake).toBeNull()
-    await ipc.call('app:state')
+    await session.close() // 先关会话（会把没渲染的渲染掉），再删目录，否则后台渲染会和删除撞上
     await tmp.cleanup()
   })
 

@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { formatISO } from 'date-fns'
+import type { ChangeInfo } from '../../shared/views'
 
 /** 一次改动前某个文件的样子 */
 export type PreImage =
@@ -24,10 +25,7 @@ export interface Manifest {
   files: ManifestFile[]
 }
 
-export interface ChangeInfo {
-  id: string
-  label: string
-}
+export type { ChangeInfo }
 
 const dirNameOf = (m: Manifest): string => `${String(m.seq).padStart(8, '0')}-${m.id}`
 

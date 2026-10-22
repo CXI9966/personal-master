@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { PERSONA_PRESETS, personaMarkdown } from '../../../src/main/init/personas'
-import { joinPersona, PERSONA_SECTIONS, splitPersona, type PersonaSections } from '../../../src/shared/persona'
+import { joinPersona, PERSONA_CHOICES, PERSONA_SECTIONS, splitPersona, type PersonaSections } from '../../../src/shared/persona'
 
 const sample: PersonaSections = {
   说话风格: '说话风格的内容',
@@ -39,6 +39,10 @@ describe('预设', () => {
       expect(parsed, preset.name).not.toBeNull()
       for (const title of PERSONA_SECTIONS) expect(parsed?.[title].length, `${preset.name}/${title}`).toBeGreaterThan(10)
     }
+  })
+
+  it('界面显示用的 PERSONA_CHOICES 和主进程的预设一一对应', () => {
+    expect(PERSONA_CHOICES).toEqual(PERSONA_PRESETS.map(({ id, name, summary }) => ({ id, name, summary })))
   })
 
   it('每套预设的“不许做的事”都包含不编造记录和不翻旧账', () => {

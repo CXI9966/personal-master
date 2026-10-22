@@ -1,6 +1,15 @@
 // 管家人格.md 固定四栏（二级标题）。界面按栏编辑；标题被改乱时，调用方把全文当成一个整体使用。
 
-export const PERSONA_SECTIONS = ['说话风格', '督促方式', '检验规则', '不许做的事'] as const
+export type PersonaId = 'coach' | 'gentle' | 'strict'
+
+/** 第一次运行时让用户选的三套人格（界面显示用，具体内容在主进程的 personas.ts） */
+export const PERSONA_CHOICES: ReadonlyArray<{ id: PersonaId; name: string; summary: string }> = [
+  { id: 'coach', name: '战友教练', summary: '并肩作战的队友：有温度，肯定具体的进步，检验不放水' },
+  { id: 'gentle', name: '温和陪伴', summary: '轻声耐心的朋友：不催促，用提问代替指令' },
+  { id: 'strict', name: '严格教官', summary: '简洁、标准明确：要求脱稿，答不出就判没掌握' },
+]
+
+export const PERSONA_SECTIONS =['说话风格', '督促方式', '检验规则', '不许做的事'] as const
 export type PersonaSectionTitle = (typeof PERSONA_SECTIONS)[number]
 export type PersonaSections = Record<PersonaSectionTitle, string>
 

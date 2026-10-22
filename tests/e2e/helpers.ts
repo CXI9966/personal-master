@@ -13,19 +13,33 @@ function electronEnv(extra: Record<string, string>): Record<string, string> {
   return { ...env, ...extra }
 }
 
+export interface LaunchOptions {
+  /** 额外的环境变量 */
+  env?: Record<string, string>
+  /** 复用已有的 userData 目录（重启应用时用）；传了就不会在 cleanup 时删掉 */
+  userData?: string
+}
+
 export interface LaunchedButler {
   app: ElectronApplication
   window: Page
   userData: string
+  /** 关闭应用；自己建的 userData 目录一并删掉 */
   cleanup: () => Promise<void>
 }
 
+export function makeTempDir(prefix = 'butler-e2e-'): { dir: string; remove: () => void } {
+  const dir = mkdtempSync(join(tmpdir(), prefix))
+  return { dir, remove: () => rmSync(dir, { recursive: true, force: true }) }
+}
+
 // 启动构建产物，用独立的 userData 目录，测试不会碰真实数据
-export async function launchButler(extraEnv: Record<string, string> = {}): Promise<LaunchedButler> {
-  const userData = mkdtempSync(join(tmpdir(), 'butler-e2e-'))
+export async function launchButler(options: LaunchOptions = {}): Promise<LaunchedButler> {
+  const owned = options.userData ? null : makeTempDir()
+  const userData = options.userData ?? owned!.dir
   const app = await electron.launch({
     args: ['.'],
-    env: electronEnv({ BUTLER_USER_DATA_DIR: userData, ...extraEnv }),
+    env: electronEnv({ BUTLER_USER_DATA_DIR: userData, ...options.env }),
   })
   const window = await app.firstWindow()
   return {
@@ -34,7 +48,7 @@ export async function launchButler(extraEnv: Record<string, string> = {}): Promi
     userData,
     cleanup: async () => {
       await app.close()
-      rmSync(userData, { recursive: true, force: true })
+      owned?.remove()
     },
   }
 }

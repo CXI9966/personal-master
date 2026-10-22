@@ -8,6 +8,7 @@ import type {
   WeightEntry,
   Workout,
 } from '../../shared/schema'
+import type { HeatCell, HeatLevel } from '../../shared/views'
 import { checkinsByDay } from './checkin'
 import { datesBetween, logicalDateOf, shiftDate, startOfWeek } from './day'
 
@@ -90,7 +91,7 @@ export function scoresByDay(days: Map<string, DayData>, weights: HeatmapWeights)
   return new Map([...days].map(([date, data]) => [date, dayScore(data, weights)]))
 }
 
-export type HeatLevel = 0 | 1 | 2 | 3 | 4
+export type { HeatCell, HeatLevel }
 export type Thresholds = [number, number, number]
 
 /** 线性插值的分位数，sorted 必须已经升序 */
@@ -121,14 +122,6 @@ export function heatLevelOf(score: number, thresholds: Thresholds | null): HeatL
   if (score <= thresholds[1]) return 2
   if (score <= thresholds[2]) return 3
   return 4
-}
-
-export interface HeatCell {
-  date: string
-  score: number
-  level: HeatLevel
-  /** 今天之后的格子 */
-  future: boolean
 }
 
 /** 最近 weeks 周，从周一排到本周日，共 weeks*7 格 */

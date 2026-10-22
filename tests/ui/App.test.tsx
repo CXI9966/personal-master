@@ -1,10 +1,35 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import App from '../../src/renderer/src/App'
+import { installButler } from './butlerMock'
 
 describe('App', () => {
-  it('显示 Butler 标题', () => {
+  it('还没有工作区：显示第一次运行页', async () => {
+    installButler({ 'app:state': { workspaceRoot: null, initialized: false, defaultRoot: 'C:\\文档\\Butler' } })
     render(<App />)
-    expect(screen.getByRole('heading', { name: 'Butler' })).toBeTruthy()
+    expect(await screen.findByRole('heading', { name: '欢迎使用 Butler' })).toBeTruthy()
+  })
+
+  it('已经有工作区：显示主界面和工作区路径', async () => {
+    installButler({ 'app:state': { workspaceRoot: 'D:\\我的工作区', initialized: true, defaultRoot: '' } })
+    render(<App />)
+    expect(await screen.findByRole('heading', { name: 'Butler' })).toBeTruthy()
+    expect(screen.getByText('工作区：D:\\我的工作区')).toBeTruthy()
+  })
+
+  it('读取状态失败：显示错误', async () => {
+    installButler({
+      'app:state': () => {
+        throw new Error('主进程没有响应')
+      },
+    })
+    render(<App />)
+    expect((await screen.findByRole('alert')).textContent).toBe('主进程没有响应')
+  })
+
+  it('加载期间显示“加载中…”', () => {
+    installButler({ 'app:state': () => new Promise(() => undefined) })
+    render(<App />)
+    expect(screen.getByText('加载中…')).toBeTruthy()
   })
 })

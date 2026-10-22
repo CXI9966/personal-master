@@ -1,6 +1,6 @@
-import { joinPersona, type PersonaSections } from '../../shared/persona'
+import { joinPersona, type PersonaId, type PersonaSections } from '../../shared/persona'
 
-export type PersonaId = 'coach' | 'gentle' | 'strict'
+export type { PersonaId }
 
 export interface PersonaPreset {
   id: PersonaId

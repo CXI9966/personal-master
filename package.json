@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "Butler 个人管家桌面客户端",
   "private": true,
+  "author": "CXI9966",
   "type": "module",
   "main": "out/main/index.js",
   "config": {
@@ -14,7 +15,9 @@
     "build": "electron-vite build",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "test": "vitest run",
-    "test:e2e": "electron-vite build && playwright test"
+    "test:e2e": "electron-vite build && playwright test",
+    "icon": "node scripts/make-icon.mjs",
+    "dist": "electron-vite build && electron-builder --win nsis"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "4.0.75",

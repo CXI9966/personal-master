@@ -1,0 +1,30 @@
+# Windows 安装包（NSIS）。不签名：第一次运行时 Windows 可能弹出“未知发布者”的提示，点“仍要运行”即可。
+appId: com.butler.app
+productName: Butler
+directories:
+  output: release
+  buildResources: build
+# 只打包构建产物；运行时依赖（ai、zod、chokidar 等）electron-builder 会按 package.json 自动带上
+files:
+  - out/**
+  - package.json
+# 用 npm install 时已经下好的 Electron，不再重复下载
+electronDist: node_modules/electron/dist
+asar: true
+artifactName: Butler-Setup-${version}.${ext}
+win:
+  icon: build/icon.png
+  target:
+    - target: nsis
+      arch:
+        - x64
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  # 快捷方式不叫 Butler，免得盖掉桌面上可能已经有的同名旧快捷方式
+  shortcutName: Butler 管家
+  # 卸载只删程序；设置、密钥和你的工作区文件夹都留着
+  deleteAppDataOnUninstall: false

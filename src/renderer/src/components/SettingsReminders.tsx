@@ -23,8 +23,13 @@ export default function SettingsReminders({
     return act.run(() => window.butler.invoke('settings:update', { reminders: { enabled, plan: plan || null, review: review || null } }))
   }
 
-  const toggleStartup = (next: boolean): Promise<boolean> =>
-    act.run(async () => setStartup(await window.butler.invoke('autostart:set', { enabled: next })))
+  // 先按点的结果显示出来（不然勾选框要等主进程应答才动，手感很迟钝）；以主进程返回的为准，失败就退回去
+  async function toggleStartup(next: boolean): Promise<void> {
+    const previous = startup
+    setStartup({ ...previous, enabled: next })
+    const ok = await act.run(async () => setStartup(await window.butler.invoke('autostart:set', { enabled: next })))
+    if (!ok) setStartup(previous)
+  }
 
   return (
     <>

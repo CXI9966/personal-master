@@ -20,6 +20,8 @@ export interface LaunchOptions {
   userData?: string
   /** 额外的命令行参数，例如 --hidden */
   args?: string[]
+  /** 装好的 Butler.exe（测安装版时用）；不传就启动 out/ 里的构建产物 */
+  executablePath?: string
 }
 
 /** 和应用同一套规则：凌晨 4 点前算前一天（用本机时间） */
@@ -56,7 +58,9 @@ export async function launchButler(options: LaunchOptions = {}): Promise<Launche
   const owned = options.userData ? null : makeTempDir()
   const userData = options.userData ?? owned!.dir
   const app = await electron.launch({
-    args: ['.', ...(options.args ?? [])],
+    ...(options.executablePath
+      ? { executablePath: options.executablePath, args: options.args ?? [] }
+      : { args: ['.', ...(options.args ?? [])] }),
     env: electronEnv({ BUTLER_USER_DATA_DIR: userData, ...options.env }),
   })
   const window = await app.firstWindow()

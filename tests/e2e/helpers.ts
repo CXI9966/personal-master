@@ -28,10 +28,11 @@ export function localLogicalToday(): string {
   return `${now.getFullYear()}-${p(now.getMonth() + 1)}-${p(now.getDate())}`
 }
 
-/** 在第一次运行页点完两步（默认战友教练） */
+/** 在第一次运行页点完三步（默认战友教练，模型接口跳过） */
 export async function completeFirstRun(window: Page): Promise<void> {
   await window.getByRole('button', { name: '下一步' }).click()
-  await window.getByRole('button', { name: '完成' }).click()
+  await window.getByRole('button', { name: '下一步' }).click()
+  await window.getByRole('button', { name: '跳过，以后再填' }).click()
   await window.getByRole('heading', { name: '今日', exact: true }).waitFor()
 }
 

@@ -34,6 +34,9 @@ export type AiEvent =
   | { runId: string; type: 'error'; message: string }
   | { runId: string; type: 'done'; aborted: boolean }
 
+/** 事件去掉 runId 的样子（runId 由发事件的一方统一补上） */
+export type AiEventBody = AiEvent extends infer E ? (E extends { runId: string } ? Omit<E, 'runId'> : never) : never
+
 /** 模型接口的配置；API key 单独放，不在这里 */
 export interface ModelConfig {
   kind: ProviderKind

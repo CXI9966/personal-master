@@ -16,10 +16,12 @@ test('第一次运行：选文件夹、选人格，生成工作区；重启后�
     await expect(window.getByRole('textbox', { name: '工作区文件夹' })).toHaveValue(root)
     await window.getByRole('button', { name: '下一步' }).click()
 
-    await expect(window.getByText('第 2 步，共 2 步')).toBeVisible()
+    await expect(window.getByText('第 2 步，共 3 步')).toBeVisible()
     await expect(window.getByRole('radio', { name: /战友教练/ })).toBeChecked()
     await window.getByRole('radio', { name: /严格教官/ }).check()
-    await window.getByRole('button', { name: '完成' }).click()
+    await window.getByRole('button', { name: '下一步' }).click()
+    await expect(window.getByText('第 3 步，共 3 步')).toBeVisible()
+    await window.getByRole('button', { name: '跳过，以后再填' }).click()
 
     await expect(window.getByRole('heading', { name: '今日', exact: true })).toBeVisible()
     await window.getByRole('navigation', { name: '主导航' }).getByRole('button', { name: '设置' }).click()

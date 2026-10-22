@@ -10,12 +10,14 @@ import TimelineEditor from '../components/TimelineEditor'
 import TodayTasks from '../components/TodayTasks'
 import { useAction } from '../hooks/useAction'
 import { useSnapshot } from '../hooks/useSnapshot'
+import { PLAN_PROMPT, REVIEW_PROMPT, useShell } from '../shellContext'
 
 const ENERGIES: Energy[] = ['high', 'mid', 'low']
 
 export default function Today() {
   const { data, error } = useSnapshot('today:get')
   const act = useAction()
+  const shell = useShell()
   const [selected, setSelected] = useState<string | null>(null)
   const [weight, setWeight] = useState('')
 
@@ -93,7 +95,12 @@ export default function Today() {
       </section>
 
       <section className="card" aria-labelledby="timeline-title">
-        <h2 id="timeline-title">时间安排</h2>
+        <header className="card-header">
+          <h2 id="timeline-title">时间安排</h2>
+          <button type="button" onClick={() => shell.ask('plan', PLAN_PROMPT)}>
+            让管家排
+          </button>
+        </header>
         <TimelineEditor
           items={data.plan.timeline}
           fixed={data.fixedToday}
@@ -105,7 +112,12 @@ export default function Today() {
       <TodayTasks data={data} act={act} />
 
       <section className="card" aria-labelledby="review-title">
-        <h2 id="review-title">晚间复盘</h2>
+        <header className="card-header">
+          <h2 id="review-title">晚间复盘</h2>
+          <button type="button" onClick={() => shell.ask('review', REVIEW_PROMPT)}>
+            复盘并检验
+          </button>
+        </header>
         <ReviewForm
           key={data.plan.review?.at ?? 'new'}
           review={data.plan.review}

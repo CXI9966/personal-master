@@ -1,5 +1,5 @@
 import { streamText, tool, type LanguageModel, type ModelMessage, type ToolSet } from 'ai'
-import type { AiEvent, AiScene, ChatMessage } from '../../shared/ai'
+import type { AiEvent, AiEventBody, AiScene, ChatMessage } from '../../shared/ai'
 import type { ActionMode, ContextStrategy, ProviderKind } from '../../shared/schema'
 import type { AppContext } from '../app/context'
 import { MUTATING, QUERIES, type ActionDef } from './actions'
@@ -10,7 +10,7 @@ import { buildSystemPrompt } from './prompt'
 import { describeAiError } from './provider'
 import { logUsage } from './usage'
 
-type EventBody = AiEvent extends infer E ? (E extends { runId: string } ? Omit<E, 'runId'> : never) : never
+type EventBody = AiEventBody
 
 export interface RunInput {
   ctx: AppContext

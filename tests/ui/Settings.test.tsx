@@ -8,7 +8,16 @@ import { installButler } from './butlerMock'
 
 function setup(profile: ProfileFile = emptyProfile()) {
   const snapshot: SettingsSnapshot = { workspaceRoot: 'D:\\我的工作区', settings: defaultSettings(), profile }
-  const butler = installButler({ 'settings:get': () => snapshot, 'settings:update': undefined, 'profile:update': undefined })
+  const butler = installButler({
+    'settings:get': () => snapshot,
+    'settings:update': undefined,
+    'profile:update': undefined,
+    // 下面三个小节各自读自己的数据，这里给个空的
+    'ai:status': { provider: { kind: 'openai-compatible', baseURL: '', model: '' }, contextStrategy: 'scene', actionMode: 'tools', hasKey: false, encryptionAvailable: true, configured: false },
+    'persona:get': { markdown: '', sections: null },
+    'persona:presets': [],
+    'ai:usage': { weekKey: '2026-W43', weekStart: '2026-10-19', weekEnd: '2026-10-25', total: { calls: 0, inputTokens: 0, outputTokens: 0 }, byFeature: {}, byDay: [], callsWithoutTokens: 0 },
+  })
   render(<Settings />)
   return butler
 }

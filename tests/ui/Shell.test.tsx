@@ -7,6 +7,10 @@ import { installButler } from './butlerMock'
 import { makeCells, todayFixture } from './fixtures'
 
 const baseHandlers = {
+  'ai:status': { provider: { kind: 'openai-compatible', baseURL: 'http://x/v1', model: 'm' }, contextStrategy: 'scene', actionMode: 'tools', hasKey: true, encryptionAvailable: true, configured: true },
+  'persona:get': { markdown: '', sections: null },
+  'persona:presets': [],
+  'ai:usage': { weekKey: '2026-W43', weekStart: '2026-10-19', weekEnd: '2026-10-25', total: { calls: 0, inputTokens: 0, outputTokens: 0 }, byFeature: {}, byDay: [], callsWithoutTokens: 0 },
   'today:get': todayFixture(),
   'tasks:get': emptyTasks(),
   'records:get': { today: '2026-10-23', heatmap: makeCells('2026-01-05', 53 * 7, '2026-10-23'), checkins: [], weights: [], weightTargetKg: null, workouts: [], learning: [], warnings: [] },
@@ -16,13 +20,17 @@ const baseHandlers = {
 }
 
 describe('Shell：导航', () => {
-  it('左边四个入口，点哪个显示哪一页，当前页标 aria-current', async () => {
+  it('左边五个入口，点哪个显示哪一页，当前页标 aria-current', async () => {
     const user = userEvent.setup()
     installButler(baseHandlers)
     render(<Shell />)
     const nav = screen.getByRole('navigation', { name: '主导航' })
     expect(within(nav).getByRole('button', { name: '今日' }).getAttribute('aria-current')).toBe('page')
     expect(await screen.findByRole('heading', { name: '今日' })).toBeTruthy()
+
+    await user.click(within(nav).getByRole('button', { name: '管家' }))
+    expect(await screen.findByRole('heading', { name: '管家' })).toBeTruthy()
+    expect(within(nav).getByRole('button', { name: '管家' }).getAttribute('aria-current')).toBe('page')
 
     await user.click(within(nav).getByRole('button', { name: '任务' }))
     expect(await screen.findByRole('heading', { name: '任务' })).toBeTruthy()
@@ -34,6 +42,31 @@ describe('Shell：导航', () => {
     await user.click(within(nav).getByRole('button', { name: '设置' }))
     expect(await screen.findByRole('heading', { name: '设置' })).toBeTruthy()
     expect(screen.getByText('D:\\我的工作区')).toBeTruthy()
+  })
+})
+
+describe('今日页的管家入口', () => {
+  it('“让管家排”“复盘并检验”会切到管家页，并用对应场景发出消息', async () => {
+    const user = userEvent.setup()
+    const butler = installButler({ ...baseHandlers, 'ai:send': { runId: 'r1' } })
+    render(<Shell />)
+    await user.click(await screen.findByRole('button', { name: '让管家排' }))
+    expect(await screen.findByRole('heading', { name: '管家' })).toBeTruthy()
+    expect(butler.callsOf('ai:send')).toHaveLength(1)
+    expect(butler.callsOf('ai:send')[0]).toMatchObject({ scene: 'plan' })
+  })
+
+  it('对话在切换页面后还在', async () => {
+    const user = userEvent.setup()
+    installButler({ ...baseHandlers, 'ai:send': { runId: 'r1' } })
+    render(<Shell />)
+    const nav = screen.getByRole('navigation', { name: '主导航' })
+    await user.click(within(nav).getByRole('button', { name: '管家' }))
+    await user.type(await screen.findByLabelText('给管家发消息'), '记住我说过的话')
+    await user.keyboard('{Enter}')
+    await user.click(within(nav).getByRole('button', { name: '任务' }))
+    await user.click(within(nav).getByRole('button', { name: '管家' }))
+    expect(await within(screen.getByRole('log', { name: '对话' })).findByText('记住我说过的话')).toBeTruthy()
   })
 })
 

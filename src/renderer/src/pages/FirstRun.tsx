@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { PERSONA_CHOICES, type PersonaId } from '../../../shared/persona'
 import type { AppState } from '../../../shared/views'
+import ModelForm from '../components/ModelForm'
 
 interface Props {
   initial: AppState
@@ -9,7 +10,8 @@ interface Props {
 
 /** 第一次运行：选工作区文件夹，再选管家的性格 */
 export default function FirstRun({ initial, onDone }: Props) {
-  const [step, setStep] = useState<'folder' | 'persona'>('folder')
+  const [step, setStep] = useState<'folder' | 'persona' | 'model'>('folder')
+  const [opened, setOpened] = useState<AppState | null>(null)
   const [root, setRoot] = useState(initial.defaultRoot)
   const [persona, setPersona] = useState<PersonaId>('coach')
   const [busy, setBusy] = useState(false)
@@ -42,14 +44,23 @@ export default function FirstRun({ initial, onDone }: Props) {
       else setStep('persona')
     })
 
-  const finish = () => run(async () => onDone(await window.butler.invoke('workspace:init', { root: root.trim(), persona })))
+  // 工作区在这一步建好，但先不进主界面：还有一步可以顺手填模型接口
+  const finish = () =>
+    run(async () => {
+      setOpened(await window.butler.invoke('workspace:init', { root: root.trim(), persona }))
+      setStep('model')
+    })
+
+  const enter = (): void => {
+    if (opened) onDone(opened)
+  }
 
   return (
     <main className="first-run">
       <h1>欢迎使用 Butler</h1>
-      {step === 'folder' ? (
+      {step === 'folder' && (
         <section aria-labelledby="folder-title">
-          <p className="step">第 1 步，共 2 步</p>
+          <p className="step">第 1 步，共 3 步</p>
           <h2 id="folder-title">选择工作区文件夹</h2>
           <p className="hint">
             你的计划、打卡和记录都放在这个文件夹里，是普通的文本文件，随时可以打开看。文件夹不存在会自动创建。
@@ -67,9 +78,10 @@ export default function FirstRun({ initial, onDone }: Props) {
             </button>
           </div>
         </section>
-      ) : (
+      )}
+      {step === 'persona' && (
         <section aria-labelledby="persona-title">
-          <p className="step">第 2 步，共 2 步</p>
+          <p className="step">第 2 步，共 3 步</p>
           <h2 id="persona-title">管家的性格</h2>
           <p className="hint">选一个起步的风格，以后随时可以在设置里改。你的目标和作息不会被预填，都由你自己填。</p>
           <fieldset className="persona-choices">
@@ -93,9 +105,17 @@ export default function FirstRun({ initial, onDone }: Props) {
               上一步
             </button>
             <button type="button" className="primary" onClick={finish} disabled={busy}>
-              完成
+              下一步
             </button>
           </div>
+        </section>
+      )}
+      {step === 'model' && (
+        <section aria-labelledby="model-step-title">
+          <p className="step">第 3 步，共 3 步</p>
+          <h2 id="model-step-title">连上一个大模型（可以跳过）</h2>
+          <p className="hint">管家要聊天、排计划，需要一个大模型接口。不填也能用打卡、任务、日历这些功能，以后在设置里补上就行。</p>
+          <ModelForm saveLabel="保存并开始用" onSaved={enter} onSkip={enter} />
         </section>
       )}
       {error && (

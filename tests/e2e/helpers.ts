@@ -20,6 +20,21 @@ export interface LaunchOptions {
   userData?: string
 }
 
+/** 和应用同一套规则：凌晨 4 点前算前一天（用本机时间） */
+export function localLogicalToday(): string {
+  const now = new Date()
+  if (now.getHours() < 4) now.setDate(now.getDate() - 1)
+  const p = (n: number): string => String(n).padStart(2, '0')
+  return `${now.getFullYear()}-${p(now.getMonth() + 1)}-${p(now.getDate())}`
+}
+
+/** 在第一次运行页点完两步（默认战友教练） */
+export async function completeFirstRun(window: Page): Promise<void> {
+  await window.getByRole('button', { name: '下一步' }).click()
+  await window.getByRole('button', { name: '完成' }).click()
+  await window.getByRole('heading', { name: '今日', exact: true }).waitFor()
+}
+
 export interface LaunchedButler {
   app: ElectronApplication
   window: Page

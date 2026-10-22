@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { AppState } from '../../shared/views'
 import FirstRun from './pages/FirstRun'
+import Shell from './Shell'
 
 export default function App() {
   const [state, setState] = useState<AppState | null>(null)
@@ -27,11 +28,5 @@ export default function App() {
     )
   }
   if (!state.initialized) return <FirstRun initial={state} onDone={setState} />
-
-  return (
-    <main className="centered">
-      <h1>Butler</h1>
-      <p className="hint">工作区：{state.workspaceRoot}</p>
-    </main>
-  )
+  return <Shell />
 }

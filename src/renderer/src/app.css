@@ -202,3 +202,328 @@ button:disabled {
   color: var(--muted);
   font-size: 0.9rem;
 }
+
+/* ---------- 主界面布局 ---------- */
+.app {
+  display: grid;
+  grid-template-columns: 190px 1fr;
+  min-height: 100vh;
+}
+
+.nav {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  height: 100vh;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  padding: 20px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.brand {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0 0 12px 10px;
+}
+
+.nav button {
+  text-align: left;
+  border: 0;
+  background: transparent;
+  padding: 0.55rem 0.8rem;
+  border-radius: 8px;
+}
+
+.nav button:hover {
+  background: var(--bg);
+}
+
+.nav button[aria-current='page'] {
+  background: var(--accent);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
+.content {
+  padding: 24px 32px 0;
+  min-width: 0;
+}
+
+.content main {
+  max-width: 980px;
+  padding-bottom: 72px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ---------- 卡片、提示条 ---------- */
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.card-header h2,
+.card-header h3 {
+  margin: 0;
+}
+
+.banner {
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  background: var(--panel);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+}
+
+.banner.danger {
+  border-left-color: var(--danger);
+}
+
+.banner p {
+  margin: 0.2rem 0;
+}
+
+.undo-bar {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 10px 16px;
+  margin: 0 -32px;
+  background: var(--panel);
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+}
+
+/* ---------- 表单 ---------- */
+.inline-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.7rem;
+}
+
+.field {
+  margin-bottom: 0.7rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.field-row {
+  display: flex;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.field input,
+.field select,
+textarea,
+select,
+input[type='time'],
+input[type='date'],
+input[type='number'] {
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: inherit;
+  font: inherit;
+}
+
+.field input[type='text'],
+.field select,
+textarea {
+  width: 100%;
+}
+
+textarea {
+  display: block;
+  margin-bottom: 0.6rem;
+  resize: vertical;
+}
+
+button[aria-pressed='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
+.review-form label {
+  margin-top: 0.3rem;
+}
+
+.weights {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  column-gap: 1rem;
+}
+
+.days {
+  border: 0;
+  padding: 0;
+  margin: 0.4rem 0 1rem;
+}
+
+.days legend {
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+}
+
+.day-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-weight: 400;
+  margin-right: 0.9rem;
+}
+
+/* ---------- 任务 ---------- */
+.tasks,
+.timeline,
+.learning {
+  list-style: none;
+  padding: 0;
+  margin: 0.4rem 0;
+}
+
+.task {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem 0.8rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.task-check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-weight: 400;
+  flex: 1;
+  min-width: 160px;
+}
+
+.task-title.done {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+
+.due,
+.meta {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.task-actions {
+  display: inline-flex;
+  gap: 0.4rem;
+}
+
+.task-actions button {
+  padding: 0.2rem 0.6rem;
+  font-size: 0.85rem;
+}
+
+.time {
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+/* ---------- 表格 ---------- */
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-top: 0.6rem;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+}
+
+th {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+/* ---------- 热力图 ---------- */
+.heatmap-scroll {
+  overflow-x: auto;
+  padding: 4px;
+}
+
+.heatmap {
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(7, 14px);
+  grid-auto-columns: 14px;
+  gap: 3px;
+  width: max-content;
+}
+
+.heat {
+  display: block;
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+}
+
+.heat-0 { background: var(--heat-0); }
+.heat-1 { background: var(--heat-1); }
+.heat-2 { background: var(--heat-2); }
+.heat-3 { background: var(--heat-3); }
+.heat-4 { background: var(--heat-4); }
+
+.heat.future {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.heatmap .heat[aria-pressed='true'] {
+  outline: 2px solid var(--text);
+  outline-offset: 1px;
+}
+
+.heat-legend {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.day-detail {
+  margin-top: 12px;
+  background: var(--bg);
+}

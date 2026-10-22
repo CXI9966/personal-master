@@ -21,8 +21,9 @@ test('第一次运行：选文件夹、选人格，生成工作区；重启后�
     await window.getByRole('radio', { name: /严格教官/ }).check()
     await window.getByRole('button', { name: '完成' }).click()
 
-    await expect(window.getByRole('heading', { name: 'Butler', exact: true })).toBeVisible()
-    await expect(window.getByText(`工作区：${root}`)).toBeVisible()
+    await expect(window.getByRole('heading', { name: '今日', exact: true })).toBeVisible()
+    await window.getByRole('navigation', { name: '主导航' }).getByRole('button', { name: '设置' }).click()
+    await expect(window.getByText(root, { exact: true })).toBeVisible()
   } finally {
     await first.app.close()
   }
@@ -37,7 +38,7 @@ test('第一次运行：选文件夹、选人格，生成工作区；重启后�
   // 重启：应用记住了工作区，不再显示第一次运行页
   const second = await launchButler({ userData: userData.dir, env })
   try {
-    await expect(second.window.getByText(`工作区：${root}`)).toBeVisible()
+    await expect(second.window.getByRole('heading', { name: '今日', exact: true })).toBeVisible()
     await expect(second.window.getByRole('heading', { name: '欢迎使用 Butler' })).toHaveCount(0)
   } finally {
     await second.app.close()

@@ -49,7 +49,7 @@ describe('buildToday', () => {
     expect(snapshot.wake?.type).toBe('wake')
     const cell = snapshot.heatmap.find((c) => c.date === '2026-10-23')
     expect(cell).toMatchObject({ score: 1, level: 1, future: false })
-    expect(snapshot.lastChange?.label).toBe('起床打卡')
+    expect(test.session.ctx().ws.lastChange()?.label).toBe('起床打卡')
   })
 
   it('计划里的任务按计划顺序解析；今天之后的格子标为 future', async () => {

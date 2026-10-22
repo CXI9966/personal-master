@@ -1,6 +1,17 @@
 // 主进程推给界面的数据形状。界面不直接读文件，也不自己算分，只显示这些快照。
 
-import type { Checkin, FixedItem, PlanFile, Task } from './schema'
+import type {
+  Checkin,
+  FixedItem,
+  HeatmapWeights,
+  LearningCheck,
+  PlanFile,
+  ProfileFile,
+  SettingsFile,
+  Task,
+  WeightEntry,
+  Workout,
+} from './schema'
 
 export type HeatLevel = 0 | 1 | 2 | 3 | 4
 
@@ -25,6 +36,69 @@ export interface AppState {
   defaultRoot: string
 }
 
+export interface NewTaskInput {
+  title: string
+  list?: string
+  due?: string | null
+  checkpoints?: string[]
+  notes?: string
+}
+export type TaskPatch = Partial<NewTaskInput>
+
+/** 某一天做了什么：点热力图格子时看 */
+export interface DaySnapshot {
+  date: string
+  weekday: string
+  score: number
+  plan: PlanFile
+  planTasks: Task[]
+  /** 这一天完成的任务（不一定在当天的计划里） */
+  doneTasks: Task[]
+  wake: Checkin | null
+  sleep: Checkin | null
+  weights: WeightEntry[]
+  workouts: Workout[]
+  learning: LearningCheck[]
+}
+
+export interface CheckinRow {
+  date: string
+  wake: Checkin | null
+  sleep: Checkin | null
+}
+
+export interface RecordsSnapshot {
+  today: string
+  /** 最近 53 周（覆盖全年），每列一周 */
+  heatmap: HeatCell[]
+  /** 最近有打卡的日子，最新的在前 */
+  checkins: CheckinRow[]
+  /** 按时间从早到晚 */
+  weights: WeightEntry[]
+  weightTargetKg: number | null
+  workouts: Workout[]
+  learning: LearningCheck[]
+  warnings: string[]
+}
+
+export interface SettingsSnapshot {
+  workspaceRoot: string
+  settings: SettingsFile
+  profile: ProfileFile
+}
+
+export interface SettingsPatch {
+  dayStartsAt?: string
+  weights?: Partial<HeatmapWeights>
+  reminders?: Partial<SettingsFile['reminders']>
+}
+
+/** 核心数据文件读不出来：界面据此提示，并提供“恢复上一个版本” */
+export interface HealthProblem {
+  rel: string
+  message: string
+}
+
 export interface TodaySnapshot {
   /** 今天的逻辑日期 */
   date: string
@@ -45,7 +119,6 @@ export interface TodaySnapshot {
   heatmap: HeatCell[]
   /** 隔了 3 天以上才回来：只显示“欢迎回来” */
   welcomeBack: boolean
-  lastChange: ChangeInfo | null
   /** 被跳过的坏行、读不出来的文件 */
   warnings: string[]
 }

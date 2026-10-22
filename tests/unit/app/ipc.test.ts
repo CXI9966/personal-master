@@ -91,11 +91,64 @@ describe('第一次运行到打卡的完整流程', () => {
     expect(init.data.workspaceRoot).toBe(tmp.dir)
 
     await ipc.call('checkin:add', { type: 'wake' })
-    const today = (await ipc.call('today:get')) as { ok: true; data: { wake: unknown; lastChange: { id: string } | null } }
+    const today = (await ipc.call('today:get')) as { ok: true; data: { wake: unknown } }
     expect(today.data.wake).not.toBeNull()
-    expect(await ipc.call('history:undo', { changeId: today.data.lastChange!.id })).toEqual({ ok: true, data: true })
+    const last = (await ipc.call('history:last')) as { ok: true; data: { id: string; label: string } }
+    expect(last.data.label).toBe('起床打卡')
+    expect(await ipc.call('history:undo', { changeId: last.data.id })).toEqual({ ok: true, data: true })
     expect(((await ipc.call('today:get')) as { ok: true; data: { wake: unknown } }).data.wake).toBeNull()
     await ipc.call('app:state')
+    await tmp.cleanup()
+  })
+
+  it('任务、计划、记录、设置这些通道串起来走一遍', async () => {
+    const { ipc, session } = setup()
+    const tmp = await makeTempDir()
+    await session.initialize(tmp.dir, 'coach')
+    type Ok<T> = { ok: true; data: T }
+    const data = async <T>(channel: string, request?: unknown): Promise<T> => {
+      const result = await ipc.call(channel, request)
+      if (!result.ok) throw new Error(`${channel} 失败：${result.error}`)
+      return result.data as T
+    }
+
+    const task = await data<{ id: string; title: string }>('tasks:add', { title: '写周报', addToToday: true })
+    await data('plan:energy', { energy: 'mid' })
+    await data('plan:review', { done: '写完了', learned: '无', change: '早睡' })
+    await data('weight:add', { kg: 76.4 })
+    await data('workout:add', { summary: '跑步', durationMin: 30 })
+    await data('settings:update', { weights: { review: 3 } })
+    await data('tasks:status', { id: task.id, status: 'done' })
+
+    const today = await data<{ planTasks: Array<{ status: string }>; plan: { energy: string } }>('today:get')
+    expect(today.planTasks[0]?.status).toBe('done')
+    expect(today.plan.energy).toBe('mid')
+    expect((await data<{ tasks: unknown[] }>('tasks:get')).tasks).toHaveLength(1)
+    expect((await data<{ weights: unknown[] }>('records:get')).weights).toHaveLength(1)
+    expect((await data<{ settings: { heatmap: { weights: { review: number } } } }>('settings:get')).settings.heatmap.weights.review).toBe(3)
+    expect(await data<unknown[]>('data:health')).toEqual([])
+    expect((await data<{ score: number }>('day:get', { date: '2026-10-23' })).score).toBeGreaterThan(0)
+    await session.close()
+    await tmp.cleanup()
+  })
+
+  it('新通道的参数不对时一律 bad-request', async () => {
+    const { ipc, session } = setup()
+    const tmp = await makeTempDir()
+    await session.initialize(tmp.dir, 'coach')
+    for (const [channel, request] of [
+      ['plan:energy', { energy: '超级满电' }],
+      ['plan:timeline', { items: [{ start: '9:00' }] }],
+      ['tasks:add', { title: 123 }],
+      ['tasks:status', { id: 'x', status: '完成' }],
+      ['weight:add', { kg: -5 }],
+      ['workout:add', { summary: '', durationMin: null }],
+      ['settings:update', { dayStartsAt: '5点' }],
+      ['day:get', { date: '昨天' }],
+    ] as const) {
+      expect(await ipc.call(channel, request), channel).toMatchObject({ ok: false, code: 'bad-request' })
+    }
+    await session.close()
     await tmp.cleanup()
   })
 })

@@ -1,15 +1,8 @@
 import { DEFAULT_LIST, YMD, type Task, type TasksFile } from '../../shared/schema'
+import type { NewTaskInput, TaskPatch } from '../../shared/views'
 import { DomainError } from './errors'
 
-export interface NewTaskInput {
-  title: string
-  list?: string
-  due?: string | null
-  checkpoints?: string[]
-  notes?: string
-}
-
-export type TaskPatch = Partial<NewTaskInput>
+export type { NewTaskInput, TaskPatch }
 
 function cleanTitle(title: string): string {
   const trimmed = title.trim()

@@ -139,8 +139,11 @@ export const HeatmapWeights = z.looseObject({
 export type HeatmapWeights = z.infer<typeof HeatmapWeights>
 
 export const ProviderKind = z.enum(['openai-compatible', 'anthropic'])
+export type ProviderKind = z.infer<typeof ProviderKind>
 export const ContextStrategy = z.enum(['scene', 'full', 'tools'])
+export type ContextStrategy = z.infer<typeof ContextStrategy>
 export const ActionMode = z.enum(['tools', 'json'])
+export type ActionMode = z.infer<typeof ActionMode>
 
 export const SettingsFile = z.looseObject({
   version: z.literal(1),

@@ -31,7 +31,8 @@ export function fakePlatform(defaultRoot = 'C:\\默认\\Butler'): FakePlatform {
 }
 
 let counter = 0
-export const newTestId = (): string => `00000000-0000-4000-8000-${String(++counter).padStart(12, '0')}`
+// 计数放在前 8 位，这样 8 位短编号也各不相同（真实的 UUID 前 8 位是随机的）
+export const newTestId = (): string => `${String(++counter).padStart(8, '0')}-0000-4000-8000-000000000000`
 
 /** 临时目录里初始化好一个工作区，返回会话和清理函数 */
 export async function openTestSession(persona: PersonaId = 'coach'): Promise<{

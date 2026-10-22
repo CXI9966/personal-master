@@ -55,7 +55,15 @@ export const removeTask = (ctx: AppContext, id: string): Promise<void> =>
     await editTodayPlan(tx, ctx, (plan) => removeTaskFromPlan(plan, id))
   })
 
-export const createList = (ctx: AppContext, name: string): Promise<void> =>
+/** 批量改截止日期（管家用）：一次改动，可以整体撤销 */
+export const rescheduleTasks = (ctx: AppContext, items: Array<{ id: string; due: string | null }>): Promise<void> =>
+  mutate(ctx, '批量改截止日期', async (tx) => {
+    let tasks = await loadTasks(tx)
+    for (const item of items) tasks = updateTask(tasks, item.id, { due: item.due })
+    await saveTasks(tx, tasks)
+  })
+
+export const createList =(ctx: AppContext, name: string): Promise<void> =>
   mutate(ctx, '新建清单', async (tx) => saveTasks(tx, addList(await loadTasks(tx), name)))
 
 export const changeListName = (ctx: AppContext, from: string, to: string): Promise<void> =>

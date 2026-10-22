@@ -129,6 +129,23 @@ describe('appendLine / readLines', () => {
   })
 })
 
+describe('appendLog', () => {
+  it('追加一行，但不进改动历史：不会顶掉最近一次改动，也不能撤销', async () => {
+    await ws.writeJson(DOC, doc('a'), Doc)
+    const before = ws.lastChange()
+    await ws.appendLog(LOG, { id: 'u1', n: 1 }, Line)
+    await ws.appendLog(LOG, { id: 'u2', n: 2 }, Line)
+    expect(ws.lastChange()).toEqual(before)
+    expect((await ws.readLines(LOG, Line)).items.map((i) => i.id)).toEqual(['u1', 'u2'])
+    expect(await ws.undo(before!.id)).toBe(true) // 撤销的是 writeJson，日志还在
+    expect((await ws.readLines(LOG, Line)).items).toHaveLength(2)
+  })
+
+  it('数据不符合 schema 时拒绝', async () => {
+    await expect(ws.appendLog(LOG, { id: 'x' } as never, Line)).rejects.toMatchObject({ code: 'invalid' })
+  })
+})
+
 describe('list', () => {
   it('列出目录下的文件名（排序、不含子目录），目录不存在返回空数组', async () => {
     expect(await ws.list('data/plans')).toEqual([])

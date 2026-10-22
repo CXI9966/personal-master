@@ -4,6 +4,7 @@ import { DomainError } from '../domain/errors'
 import { nowISO, logicalToday } from '../domain/day'
 import { loadPlan, loadSettings, loadTasks } from '../domain/load'
 import { saveReview, setEnergy, setPlanTasks, setTimeline } from '../domain/plan'
+// 下面的 addPlanItem、applyDayPlan 给管家的动作用
 import type { Tx } from '../store/types'
 import type { AppContext } from './context'
 import { mutate } from './services'
@@ -39,5 +40,27 @@ export const updatePlanTasks = (ctx: AppContext, taskIds: string[]): Promise<voi
     await editTodayPlan(tx, ctx, (plan) => setPlanTasks(plan, taskIds))
   })
 
-export const updateReview = (ctx: AppContext, input: { done: string; learned: string; change: string }): Promise<void> =>
+/** 在今天的时间安排里加一条 */
+export const addPlanItem = (ctx: AppContext, item: { start: string; end: string; title: string }): Promise<void> =>
+  mutate(ctx, '加一条安排', (tx) =>
+    editTodayPlan(tx, ctx, (plan) => setTimeline(plan, [...plan.timeline, { ...item, taskId: null }])),
+  )
+
+/** 整天重排：时间安排和任务整个替换，精力给了才改。一次改动，可以整体撤销 */
+export const applyDayPlan = (
+  ctx: AppContext,
+  input: { energy?: Energy | null; timeline: Array<{ start: string; end: string; title: string }>; taskIds: string[] },
+): Promise<void> =>
+  mutate(ctx, '重排今天', async (tx) => {
+    const known = new Set((await loadTasks(tx)).tasks.map((task) => task.id))
+    const missing = input.taskIds.find((id) => !known.has(id))
+    if (missing) throw new DomainError('not-found', `找不到任务：${missing}`)
+    await editTodayPlan(tx, ctx, (plan) => {
+      const withTimeline = setTimeline(plan, input.timeline.map((item) => ({ ...item, taskId: null })))
+      const withTasks = setPlanTasks(withTimeline, input.taskIds)
+      return input.energy === undefined ? withTasks : setEnergy(withTasks, input.energy)
+    })
+  })
+
+export const updateReview =(ctx: AppContext, input: { done: string; learned: string; change: string }): Promise<void> =>
   mutate(ctx, '保存复盘', (tx) => editTodayPlan(tx, ctx, (plan) => saveReview(plan, input, nowISO(ctx.now()))))

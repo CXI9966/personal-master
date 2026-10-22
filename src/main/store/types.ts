@@ -21,6 +21,10 @@ export interface Tx {
 export interface Workspace extends Tx {
   readonly root: string
   /**
+   * 追加一行流水账（比如用量记录）：不进改动历史，所以不会顶掉“最近一次改动”，也不能被撤销。
+   */
+  appendLog<S extends ZodType>(rel: string, value: z.input<S>, schema: S): Promise<void>
+  /**
    * 写生成的视图文件（今日.md 之类）：内容没变就不重写，不进改动历史，也不算外部改动。
    */
   writeGenerated(rel: string, text: string): Promise<void>

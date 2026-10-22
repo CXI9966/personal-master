@@ -153,9 +153,9 @@ class WorkspaceImpl implements Workspace {
     rec.markApplied(rel)
   }
 
-  private async appendTracked(rec: Recorder, rel: string, line: string): Promise<void> {
+  /** 往 JSONL 末尾追加一行，返回追加前的字节数（文件不存在返回 null）。不记历史，调用方负责 */
+  private async appendRaw(rel: string, line: string, beforeWrite?: (sizeBefore: number | null) => void): Promise<void> {
     const abs = this.abs(rel)
-    if (rec.kindOf(rel) === 'text') throw new Error(`同一次改动里不能对 ${rel} 混用覆盖写和追加`)
     let size = 0
     let exists = true
     try {
@@ -164,7 +164,7 @@ class WorkspaceImpl implements Workspace {
       if (!isEnoent(error)) throw error
       exists = false
     }
-    if (!rec.has(rel)) rec.add(exists ? { rel, kind: 'truncate', length: size } : { rel, kind: 'absent' })
+    beforeWrite?.(exists ? size : null)
     await mkdir(dirname(abs), { recursive: true })
     // 上次写到一半的半行没有换行，先补一个，免得新行粘在它后面
     let prefix = ''
@@ -179,9 +179,16 @@ class WorkspaceImpl implements Workspace {
       }
     }
     this.mark(abs)
-    rec.markApplied(rel) // 追加可能已写入一部分，保守地算已落盘
     await appendFile(abs, `${prefix}${line}\n`, 'utf8')
     this.mark(abs)
+  }
+
+  private async appendTracked(rec: Recorder, rel: string, line: string): Promise<void> {
+    if (rec.kindOf(rel) === 'text') throw new Error(`同一次改动里不能对 ${rel} 混用覆盖写和追加`)
+    await this.appendRaw(rel, line, (sizeBefore) => {
+      if (!rec.has(rel)) rec.add(sizeBefore === null ? { rel, kind: 'absent' } : { rel, kind: 'truncate', length: sizeBefore })
+      rec.markApplied(rel) // 追加可能已写入一部分，保守地算已落盘
+    })
   }
 
   private makeTx(rec: Recorder): Tx {
@@ -232,6 +239,13 @@ class WorkspaceImpl implements Workspace {
 
   appendLine<S extends ZodType>(rel: string, value: z.input<S>, schema: S): Promise<void> {
     return this.batch(`追加 ${rel}`, (tx) => tx.appendLine(rel, value, schema))
+  }
+
+  appendLog<S extends ZodType>(rel: string, value: z.input<S>, schema: S): Promise<void> {
+    return this.queue.run(async () => {
+      const r = normalizeRel(rel)
+      await this.appendRaw(r, JSON.stringify(this.validate(r, value, schema)))
+    })
   }
 
   writeGenerated(rel: string, text: string): Promise<void> {

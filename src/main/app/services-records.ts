@@ -1,8 +1,9 @@
 import { PATHS } from '../../shared/paths'
-import { ProfileFile, SettingsFile, Workout, WeightEntry } from '../../shared/schema'
+import { LearningCheck, ProfileFile, SettingsFile, Workout, WeightEntry } from '../../shared/schema'
 import type { SettingsPatch } from '../../shared/views'
 import { nowISO } from '../domain/day'
-import { loadSettings } from '../domain/load'
+import { nextLearningSeq } from '../domain/learning'
+import { loadProfile, loadSettings } from '../domain/load'
 import type { AppContext } from './context'
 import { mutate } from './services'
 
@@ -29,3 +30,51 @@ export const changeSettings = (ctx: AppContext, patch: SettingsPatch): Promise<v
 
 export const changeProfile = (ctx: AppContext, profile: ProfileFile): Promise<void> =>
   mutate(ctx, '修改目标和安排', (tx) => tx.writeJson(PATHS.profile, profile, ProfileFile))
+
+/** 只改给出的字段（管家用）；undefined 的字段保持不动，null 表示清空 */
+export const patchProfile = (
+  ctx: AppContext,
+  patch: {
+    weightTargetKg?: number | null
+    notes?: string
+    wakeTarget?: string | null
+    sleepTarget?: string | null
+    gymDays?: number[]
+    fixed?: ProfileFile['schedule']['fixed']
+  },
+): Promise<void> =>
+  mutate(ctx, '修改目标和安排', async (tx) => {
+    const current = await loadProfile(tx)
+    const next: ProfileFile = {
+      ...current,
+      goals: {
+        ...current.goals,
+        ...(patch.weightTargetKg !== undefined ? { weightTargetKg: patch.weightTargetKg } : {}),
+        ...(patch.notes !== undefined ? { notes: patch.notes } : {}),
+      },
+      schedule: {
+        ...current.schedule,
+        ...(patch.wakeTarget !== undefined ? { wakeTarget: patch.wakeTarget } : {}),
+        ...(patch.sleepTarget !== undefined ? { sleepTarget: patch.sleepTarget } : {}),
+        ...(patch.gymDays !== undefined ? { gymDays: [...new Set(patch.gymDays)].sort() } : {}),
+        ...(patch.fixed !== undefined ? { fixed: patch.fixed } : {}),
+      },
+    }
+    await tx.writeJson(PATHS.profile, next, ProfileFile)
+  })
+
+/** 记一次学习检验：序号自动接着往下排 */
+export const recordLearning = (
+  ctx: AppContext,
+  input: { topic: string; taskId: string | null; checks: LearningCheck['checks'] },
+): Promise<number> =>
+  mutate(ctx, '记学习检验', async (tx) => {
+    const { items } = await tx.readLines(PATHS.learning, LearningCheck)
+    const seq = nextLearningSeq(items)
+    await tx.appendLine(
+      PATHS.learning,
+      { id: ctx.newId(), seq, at: nowISO(ctx.now()), taskId: input.taskId, topic: input.topic.trim(), checks: input.checks },
+      LearningCheck,
+    )
+    return seq
+  })

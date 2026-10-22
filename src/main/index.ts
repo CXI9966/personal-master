@@ -1,8 +1,10 @@
-import { app, dialog, ipcMain, Menu, nativeImage, type BrowserWindow } from 'electron'
+import { app, dialog, ipcMain, Menu, nativeImage, safeStorage, type BrowserWindow } from 'electron'
 import { join } from 'node:path'
+import { createAiService } from './ai/service'
 import { createFileConfigStore } from './app/config'
 import type { Platform } from './app/context'
 import { makeIconPng } from './app/icon'
+import { createSecretStore } from './app/secrets'
 import { createSession } from './app/session'
 import { buildToday } from './app/snapshots'
 import { buildTrayModel, performTrayAction } from './app/trayModel'
@@ -46,8 +48,18 @@ async function start(): Promise<void> {
       if (window && !window.isDestroyed()) window.webContents.send('data:changed', { reason })
       refreshTray()
     },
+    notifyAi(event) {
+      if (window && !window.isDestroyed()) window.webContents.send('ai:event', event)
+    },
   }
   const session = createSession({ platform, onWarn: log })
+  // API key 用系统的加密存储（Windows 上是 DPAPI）保存在应用数据目录里，不进工作区
+  const secrets = createSecretStore(app.getPath('userData'), {
+    isAvailable: () => safeStorage.isEncryptionAvailable(),
+    encrypt: (plain) => safeStorage.encryptString(plain),
+    decrypt: (data) => safeStorage.decryptString(data),
+  })
+  const ai = createAiService({ session, secrets, platform, encryptionAvailable: () => safeStorage.isEncryptionAvailable() })
 
   async function updateTray(): Promise<void> {
     if (!tray) return
@@ -78,7 +90,7 @@ async function start(): Promise<void> {
   await app.whenReady()
   app.setAppUserModelId('com.butler.app') // Windows 通知需要
   Menu.setApplicationMenu(null)
-  registerIpc(ipcMain, createHandlers(session, platform), isTrustedSender)
+  registerIpc(ipcMain, createHandlers(session, platform, ai), isTrustedSender)
   await session.restore()
 
   const icon = nativeImage.createFromBuffer(makeIconPng(256))

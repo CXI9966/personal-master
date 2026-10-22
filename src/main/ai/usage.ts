@@ -1,4 +1,4 @@
-import type { AiScene } from '../../shared/ai'
+import type { AiScene, UsageSummary, UsageTotals } from '../../shared/ai'
 import { datesBetween, isoWeekOf, shiftDate, startOfWeek } from '../../shared/calendar'
 import { PATHS } from '../../shared/paths'
 import { UsageEntry } from '../../shared/schema'
@@ -28,25 +28,9 @@ export function logUsage(
   )
 }
 
-export interface UsageTotals {
-  calls: number
-  inputTokens: number
-  outputTokens: number
-}
+export type { UsageSummary, UsageTotals }
 
-export interface UsageSummary {
-  weekKey: string
-  weekStart: string
-  weekEnd: string
-  total: UsageTotals
-  byFeature: Partial<Record<AiScene, UsageTotals>>
-  /** 这一周每一天都有一项，没调用的天是 0 */
-  byDay: Array<UsageTotals & { date: string }>
-  /** 有的接口不返回 token 数，这些调用只算次数 */
-  callsWithoutTokens: number
-}
-
-const zero = (): UsageTotals => ({ calls: 0, inputTokens: 0, outputTokens: 0 })
+const zero =(): UsageTotals => ({ calls: 0, inputTokens: 0, outputTokens: 0 })
 
 /** 某一周（周一到周日）的用量：按功能、按天 */
 export async function summarizeUsage(ctx: AppContext, dateInWeek: string): Promise<UsageSummary> {

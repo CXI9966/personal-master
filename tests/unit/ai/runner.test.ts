@@ -9,6 +9,7 @@ import type { AiEvent } from '../../../src/shared/ai'
 import { PATHS } from '../../../src/shared/paths'
 import { UsageEntry, type ActionMode, type ContextStrategy, type ProviderKind } from '../../../src/shared/schema'
 import { newTestId, openTestSession, useShanghaiTimezone } from '../app/helpers'
+// （这个文件只测对话循环本身；密钥、配置这些在 service.test.ts）
 import { startMockServer, type MockServer } from './mockServer'
 
 const tz = useShanghaiTimezone()

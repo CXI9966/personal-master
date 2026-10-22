@@ -13,17 +13,20 @@ import {
   editTask,
   removeTask,
 } from '../app/services-tasks'
+import type { AiService } from '../ai/service'
 import type { Session } from '../app/session'
 import { buildDay, buildRecords, buildSettings, buildToday, checkHealth } from '../app/snapshots'
 import { loadTasks } from '../domain/load'
+import { PERSONA_PRESETS } from '../init/personas'
+import { joinPersona } from '../../shared/persona'
 import { schemas as s } from './schemas'
 
 /** 每个通道一个处理函数；少一个、多一个都会编译报错 */
 export type Handlers = { [C in Channel]: (request: Request<C>) => Promise<Response<C>> }
 
-const Id = z.string().min(1)
+const Id = z.string().min(1) // 这里的 Id 只要求非空：runId、卡片 id 不一定是 UUID
 
-export function createHandlers(session: Session, platform: Platform): Handlers {
+export function createHandlers(session: Session, platform: Platform, ai: AiService): Handlers {
   const ctx = () => session.ctx()
   return {
     'app:state': () => session.state(),
@@ -62,5 +65,17 @@ export function createHandlers(session: Session, platform: Platform): Handlers {
     'history:undo': ({ changeId }) => undoChange(ctx(), Id.parse(changeId)),
     'history:restore': ({ rel }) => restoreFile(ctx(), Id.parse(rel)),
     'data:health': () => checkHealth(ctx()),
+
+    'ai:status': () => ai.status(),
+    'ai:save': (input) => ai.saveConfig(s.aiSave.parse(input)),
+    'ai:test': (input) => ai.test(s.aiTest.parse(input)),
+    'ai:send': (input) => ai.send(s.aiSend.parse(input)),
+    'ai:cancel': async ({ runId }) => ai.cancel(Id.parse(runId)),
+    'ai:confirm': ({ cardId, accept }) => ai.confirm(Id.parse(cardId), z.boolean().parse(accept)),
+    'ai:reset': async () => ai.reset(),
+    'ai:usage': () => ai.usage(),
+    'persona:get': () => ai.persona(),
+    'persona:save': ({ markdown }) => ai.savePersona(z.string().parse(markdown)),
+    'persona:presets': async () => PERSONA_PRESETS.map((p) => ({ id: p.id, name: p.name, summary: p.summary, markdown: joinPersona(p.sections) })),
   }
 }

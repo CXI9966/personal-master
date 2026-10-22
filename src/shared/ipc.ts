@@ -1,7 +1,18 @@
 // 界面和主进程之间的全部通道、请求和响应类型。新增通道只改这里和对应的 handler。
 
-import type { PersonaId } from './persona'
-import type { Checkin, Energy, ProfileFile, Task, TasksFile, TimelineItem } from './schema'
+import type {
+  ActionCard,
+  AiEvent,
+  AiScene,
+  AiStatus,
+  ChatMessage,
+  ConnectionResult,
+  ModelConfig,
+  PersonaPresetInfo,
+  UsageSummary,
+} from './ai'
+import type { PersonaId, PersonaSections } from './persona'
+import type { ActionMode, Checkin, ContextStrategy, Energy, ProfileFile, Task, TasksFile, TimelineItem } from './schema'
 import type {
   AppState,
   ChangeInfo,
@@ -61,6 +72,26 @@ export interface IpcMap {
   'history:restore': { req: { rel: string }; res: boolean }
   /** 核心数据文件有没有读不出来的 */
   'data:health': { req: void; res: HealthProblem[] }
+  // ---- 管家 ----
+  'ai:status': { req: void; res: AiStatus }
+  /** 保存模型接口配置。apiKey 不给就保持原来的；clearKey 为真就清掉已保存的 key */
+  'ai:save': {
+    req: { provider: ModelConfig; contextStrategy: ContextStrategy; actionMode: ActionMode; apiKey?: string; clearKey?: boolean }
+    res: void
+  }
+  /** 测试连接。apiKey 不给就用已保存的 */
+  'ai:test': { req: { provider: ModelConfig; apiKey?: string }; res: ConnectionResult }
+  /** 开始一次对话，马上返回；进展通过 ai:event 事件推过来 */
+  'ai:send': { req: { messages: ChatMessage[]; scene: AiScene }; res: { runId: string } }
+  'ai:cancel': { req: { runId: string }; res: void }
+  /** 对一张待确认的卡片点确认或取消 */
+  'ai:confirm': { req: { cardId: string; accept: boolean }; res: ActionCard }
+  /** 新对话：清掉还没确认的卡片 */
+  'ai:reset': { req: void; res: void }
+  'ai:usage': { req: void; res: UsageSummary }
+  'persona:get': { req: void; res: { markdown: string; sections: PersonaSections | null } }
+  'persona:save': { req: { markdown: string }; res: void }
+  'persona:presets': { req: void; res: PersonaPresetInfo[] }
 }
 
 export type Channel = keyof IpcMap
@@ -99,6 +130,17 @@ const channelTable = {
   'history:undo': true,
   'history:restore': true,
   'data:health': true,
+  'ai:status': true,
+  'ai:save': true,
+  'ai:test': true,
+  'ai:send': true,
+  'ai:cancel': true,
+  'ai:confirm': true,
+  'ai:reset': true,
+  'ai:usage': true,
+  'persona:get': true,
+  'persona:save': true,
+  'persona:presets': true,
 } as const satisfies Record<Channel, true>
 
 export const CHANNELS = Object.keys(channelTable) as Channel[]
@@ -109,9 +151,11 @@ export type IpcResult<T> = { ok: true; data: T } | { ok: false; error: string; c
 /** 主进程主动推给界面的事件 */
 export interface EventMap {
   'data:changed': { reason: 'local' | 'external' }
+  /** 管家对话的进展：文字、动作卡片、提示、错误、结束 */
+  'ai:event': AiEvent
 }
 export type EventName = keyof EventMap
-export const EVENT_NAMES: readonly EventName[] = ['data:changed']
+export const EVENT_NAMES: readonly EventName[] = ['data:changed', 'ai:event']
 
 type InvokeArgs<C extends Channel> = Request<C> extends void ? [] : [Request<C>]
 

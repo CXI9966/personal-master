@@ -1,7 +1,7 @@
 import { createAnthropic } from '@ai-sdk/anthropic'
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible'
 import { APICallError, generateText, type LanguageModel } from 'ai'
-import type { ModelConfig } from '../../shared/ai'
+import type { ConnectionResult, ModelConfig } from '../../shared/ai'
 import { DomainError } from '../domain/errors'
 
 // SDK 默认会把“这个功能走兼容模式”之类的警告打到控制台，对用户没用
@@ -54,7 +54,7 @@ export function describeAiError(error: unknown): string {
   return `出错了：${error instanceof Error ? error.message : String(error)}`
 }
 
-export type ConnectionResult = { ok: true; reply: string; inputTokens: number | null; outputTokens: number | null } | { ok: false; message: string }
+export type { ConnectionResult }
 
 const finite = (n: number | undefined): number | null => (typeof n === 'number' && Number.isFinite(n) ? n : null)
 

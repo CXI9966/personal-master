@@ -91,6 +91,9 @@ export interface SettingsPatch {
   dayStartsAt?: string
   weights?: Partial<HeatmapWeights>
   reminders?: Partial<SettingsFile['reminders']>
+  provider?: Partial<SettingsFile['provider']>
+  contextStrategy?: SettingsFile['contextStrategy']
+  actionMode?: SettingsFile['actionMode']
 }
 
 /** 核心数据文件读不出来：界面据此提示，并提供“恢复上一个版本” */

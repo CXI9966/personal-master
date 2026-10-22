@@ -22,13 +22,20 @@ export const changeSettings = (ctx: AppContext, patch: SettingsPatch): Promise<v
     const next: SettingsFile = {
       ...current,
       ...(patch.dayStartsAt !== undefined ? { dayStartsAt: patch.dayStartsAt } : {}),
+      ...(patch.contextStrategy !== undefined ? { contextStrategy: patch.contextStrategy } : {}),
+      ...(patch.actionMode !== undefined ? { actionMode: patch.actionMode } : {}),
+      provider: { ...current.provider, ...patch.provider },
       heatmap: { ...current.heatmap, weights: { ...current.heatmap.weights, ...patch.weights } },
       reminders: { ...current.reminders, ...patch.reminders },
     }
     await tx.writeJson(PATHS.settings, next, SettingsFile)
   })
 
-export const changeProfile = (ctx: AppContext, profile: ProfileFile): Promise<void> =>
+/** 保存管家人格.md（整篇）。末尾保证有换行 */
+export const savePersonaText = (ctx: AppContext, markdown: string): Promise<void> =>
+  mutate(ctx, '修改管家人格', (tx) => tx.writeText(PATHS.persona, markdown.endsWith('\n') ? markdown : `${markdown}\n`))
+
+export const changeProfile =(ctx: AppContext, profile: ProfileFile): Promise<void> =>
   mutate(ctx, '修改目标和安排', (tx) => tx.writeJson(PATHS.profile, profile, ProfileFile))
 
 /** 只改给出的字段（管家用）；undefined 的字段保持不动，null 表示清空 */

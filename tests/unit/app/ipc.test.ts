@@ -7,7 +7,7 @@ import { WorkspaceError } from '../../../src/main/store/errors'
 import { CHANNELS, type IpcResult } from '../../../src/shared/ipc'
 import { z } from 'zod'
 import { makeTempDir } from '../store/helpers'
-import { fakePlatform, NOW, newTestId, useShanghaiTimezone } from './helpers'
+import { fakeAi, fakePlatform, NOW, newTestId, useShanghaiTimezone } from './helpers'
 
 const tz = useShanghaiTimezone()
 beforeEach(tz.enter)
@@ -28,7 +28,7 @@ class FakeIpcMain implements IpcMainLike {
 function setup() {
   const platform = fakePlatform()
   const session = createSession({ platform, now: () => NOW, newId: newTestId, renderDelayMs: 20, watch: false })
-  const handlers = createHandlers(session, platform)
+  const handlers = createHandlers(session, platform, fakeAi(session, platform))
   const ipc = new FakeIpcMain()
   registerIpc(ipc, handlers)
   return { platform, session, handlers, ipc }
@@ -67,7 +67,7 @@ describe('应答格式', () => {
     const platform = fakePlatform()
     const session = createSession({ platform, watch: false })
     const ipc = new FakeIpcMain()
-    registerIpc(ipc, createHandlers(session, platform), () => false)
+    registerIpc(ipc, createHandlers(session, platform, fakeAi(session, platform)), () => false)
     expect(await ipc.call('app:state')).toMatchObject({ ok: false, code: 'untrusted' })
   })
 

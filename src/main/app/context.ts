@@ -1,3 +1,4 @@
+import type { AiEvent } from '../../shared/ai'
 import type { Workspace } from '../store/types'
 
 export interface AppConfig {
@@ -16,6 +17,8 @@ export interface Platform {
   readConfig(): Promise<AppConfig>
   writeConfig(config: AppConfig): Promise<void>
   notifyDataChanged(reason: 'local' | 'external'): void
+  /** 管家对话的进展（文字、动作卡片、错误……）推给界面 */
+  notifyAi(event: AiEvent): void
 }
 
 /** 打开工作区之后，所有服务共用的上下文 */

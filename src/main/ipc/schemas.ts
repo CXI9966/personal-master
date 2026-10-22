@@ -1,5 +1,16 @@
 import { z } from 'zod'
-import { Energy, HeatmapWeights, HHmm, Id, ProfileFile, TimelineItem, YMD } from '../../shared/schema'
+import {
+  ActionMode,
+  ContextStrategy,
+  Energy,
+  HeatmapWeights,
+  HHmm,
+  Id,
+  ProfileFile,
+  ProviderKind,
+  TimelineItem,
+  YMD,
+} from '../../shared/schema'
 
 /** 界面传来的请求参数的校验。界面是我们自己的代码，这里是最后一道防线 */
 export const schemas = {
@@ -30,6 +41,9 @@ export const schemas = {
   weight: z.number().positive().max(500),
   workout: z.object({ summary: z.string().min(1), durationMin: z.number().nonnegative().nullable() }),
   settingsPatch: z.object({
+    provider: z.object({ kind: ProviderKind.optional(), baseURL: z.string().optional(), model: z.string().optional() }).optional(),
+    contextStrategy: ContextStrategy.optional(),
+    actionMode: ActionMode.optional(),
     dayStartsAt: HHmm.optional(),
     weights: HeatmapWeights.partial().optional(),
     reminders: z
@@ -37,4 +51,20 @@ export const schemas = {
       .optional(),
   }),
   profile: ProfileFile,
+  modelConfig: z.object({ kind: ProviderKind, baseURL: z.string(), model: z.string() }),
+  aiSave: z.object({
+    provider: z.object({ kind: ProviderKind, baseURL: z.string(), model: z.string() }),
+    contextStrategy: ContextStrategy,
+    actionMode: ActionMode,
+    apiKey: z.string().optional(),
+    clearKey: z.boolean().optional(),
+  }),
+  aiTest: z.object({
+    provider: z.object({ kind: ProviderKind, baseURL: z.string(), model: z.string() }),
+    apiKey: z.string().optional(),
+  }),
+  aiSend: z.object({
+    messages: z.array(z.object({ role: z.enum(['user', 'assistant']), text: z.string() })).min(1).max(100),
+    scene: z.enum(['chat', 'plan', 'review', 'weekly']),
+  }),
 }

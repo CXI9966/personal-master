@@ -1,4 +1,8 @@
+import { createAiService, type AiService } from '../../../src/main/ai/service'
 import type { AppConfig, Platform } from '../../../src/main/app/context'
+import type { SecretStore } from '../../../src/main/app/secrets'
+import { DomainError } from '../../../src/main/domain/errors'
+import type { AiEvent } from '../../../src/shared/ai'
 import { createSession, type Session } from '../../../src/main/app/session'
 import type { PersonaId } from '../../../src/shared/persona'
 import { makeTempDir } from '../store/helpers'
@@ -8,6 +12,7 @@ export const NOW = new Date('2026-10-23T12:00:00+08:00')
 
 export interface FakePlatform extends Platform {
   config: AppConfig
+  aiEvents: AiEvent[]
   notifications: Array<'local' | 'external'>
   picked: string | null
 }
@@ -15,6 +20,7 @@ export interface FakePlatform extends Platform {
 export function fakePlatform(defaultRoot = 'C:\\默认\\Butler'): FakePlatform {
   const platform: FakePlatform = {
     config: { workspaceRoot: null },
+    aiEvents: [],
     notifications: [],
     picked: null,
     pickFolder: async () => platform.picked,
@@ -26,8 +32,31 @@ export function fakePlatform(defaultRoot = 'C:\\默认\\Butler'): FakePlatform {
     notifyDataChanged: (reason) => {
       platform.notifications.push(reason)
     },
+    notifyAi: (event) => {
+      platform.aiEvents.push(event)
+    },
   }
   return platform
+}
+
+/** 放在内存里的密钥存储，测试用 */
+export function memorySecrets(options: { available?: boolean } = {}): SecretStore & { values: Map<string, string> } {
+  const values = new Map<string, string>()
+  return {
+    values,
+    has: async (name) => values.has(name),
+    get: async (name) => values.get(name) ?? null,
+    set: async (name, value) => {
+      if (options.available === false) throw new DomainError('invalid', '这台电脑上无法加密保存密钥，所以没有保存')
+      values.set(name, value)
+    },
+    delete: async (name) => void values.delete(name),
+  }
+}
+
+/** 给 IPC 测试用：一个接好假密钥存储的管家服务 */
+export function fakeAi(session: Session, platform: Platform, secrets = memorySecrets()): AiService {
+  return createAiService({ session, secrets, platform, encryptionAvailable: () => true, newId: newTestId })
 }
 
 let counter = 0

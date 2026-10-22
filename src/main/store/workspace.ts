@@ -1,4 +1,4 @@
-import { appendFile, mkdir, open, readFile, rm, stat, truncate } from 'node:fs/promises'
+import { appendFile, mkdir, open, readdir, readFile, rm, stat, truncate } from 'node:fs/promises'
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import type { z, ZodType } from 'zod'
 import { formatIssues, zhParse } from '../../shared/issues'
@@ -63,6 +63,16 @@ class WorkspaceImpl implements Workspace {
       return stripBom(await readFile(this.abs(rel), 'utf8'))
     } catch (error) {
       if (isEnoent(error)) return null
+      throw error
+    }
+  }
+
+  private async listRaw(relDir: string): Promise<string[]> {
+    try {
+      const entries = await readdir(this.abs(relDir), { withFileTypes: true })
+      return entries.filter((entry) => entry.isFile()).map((entry) => entry.name).sort()
+    } catch (error) {
+      if (isEnoent(error)) return []
       throw error
     }
   }
@@ -181,6 +191,7 @@ class WorkspaceImpl implements Workspace {
         return text === null ? { items: [], skipped: [] } : parseJsonl(text, schema)
       },
       readText: (rel) => this.readTextRaw(normalizeRel(rel)),
+      list: (relDir) => this.listRaw(normalizeRel(relDir)),
       writeJson: async (rel, value, schema) => {
         const r = normalizeRel(rel)
         return this.writeTracked(rec, r, `${JSON.stringify(this.validate(r, value, schema), null, 2)}\n`)
@@ -204,6 +215,10 @@ class WorkspaceImpl implements Workspace {
 
   readText(rel: string): Promise<string | null> {
     return this.queue.run(() => this.readTextRaw(normalizeRel(rel)))
+  }
+
+  list(relDir: string): Promise<string[]> {
+    return this.queue.run(() => this.listRaw(normalizeRel(relDir)))
   }
 
   writeJson<S extends ZodType>(rel: string, value: z.input<S>, schema: S): Promise<void> {

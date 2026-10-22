@@ -11,6 +11,8 @@ export interface Tx {
   readLines<S extends ZodType>(rel: string, schema: S): Promise<LinesResult<z.output<S>>>
   /** 文件不存在返回 null；会去掉 BOM */
   readText(rel: string): Promise<string | null>
+  /** 目录下的文件名（不含子目录），按名字排序；目录不存在返回空数组 */
+  list(relDir: string): Promise<string[]>
   writeJson<S extends ZodType>(rel: string, value: z.input<S>, schema: S): Promise<void>
   writeText(rel: string, text: string): Promise<void>
   appendLine<S extends ZodType>(rel: string, value: z.input<S>, schema: S): Promise<void>

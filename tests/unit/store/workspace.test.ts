@@ -1,4 +1,4 @@
-import { open, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, open, readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { z } from 'zod'
@@ -126,6 +126,16 @@ describe('appendLine / readLines', () => {
   it('不符合 schema 的行不会写入', async () => {
     await expect(ws.appendLine(LOG, { id: 'a' } as never, Line)).rejects.toMatchObject({ code: 'invalid' })
     expect(await ws.readLines(LOG, Line)).toEqual({ items: [], skipped: [] })
+  })
+})
+
+describe('list', () => {
+  it('列出目录下的文件名（排序、不含子目录），目录不存在返回空数组', async () => {
+    expect(await ws.list('data/plans')).toEqual([])
+    await ws.writeJson('data/plans/2026-10-02.json', doc('b'), Doc)
+    await ws.writeJson('data/plans/2026-10-01.json', doc('a'), Doc)
+    await mkdir(join(ctx.dir, 'data', 'plans', '子目录'))
+    expect(await ws.list('data/plans')).toEqual(['2026-10-01.json', '2026-10-02.json'])
   })
 })
 

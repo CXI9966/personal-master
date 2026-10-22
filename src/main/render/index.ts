@@ -1,10 +1,11 @@
 import { archiveDir, shiftDate } from '../../shared/calendar'
 import { PATHS, planPath } from '../../shared/paths'
-import { PlanFile, type Task } from '../../shared/schema'
+import { PlanFile, UsageEntry, WeeklyComment, type Task } from '../../shared/schema'
 import { pickCheckins } from '../domain/checkin'
 import { logicalToday } from '../domain/day'
 import { loadPlan, loadProfile, loadSettings, loadSources, loadTasks } from '../domain/load'
 import { weekRows, weeklyStats } from '../domain/stats'
+import { weeklyReportViews } from '../domain/weekly'
 import type { Workspace } from '../store/types'
 import { planHasContent, renderDayArchive } from './archive'
 import { sanitizeFileName } from './common'
@@ -13,6 +14,7 @@ import { renderCheckins, renderLearning, renderWeight, renderWorkouts } from './
 import { renderTaskList } from './tasks'
 import { renderToday } from './today'
 import { renderWeek } from './week'
+import { renderWeeklyReport } from './weekly'
 
 export interface RenderOptions {
   now?: Date
@@ -61,6 +63,18 @@ export async function renderAll(ws: Workspace, options: RenderOptions = {}): Pro
   for (const name of await ws.list(TASKS_DIR)) {
     if (name.endsWith('.md') && !expected.has(name)) await ws.removeGenerated(`${TASKS_DIR}/${name}`)
   }
+
+  // 周报：已经结束、有记录的几周。平时看最近 4 周，full 时回溯一整年；内容没变的不会重写
+  const reports = weeklyReportViews({
+    sources,
+    dayStartsAt,
+    weights: settings.heatmap.weights,
+    today,
+    weeks: options.full ? 52 : 4,
+    usage: (await ws.readLines(PATHS.usage, UsageEntry)).items,
+    comments: (await ws.readLines(PATHS.weeklyComments, WeeklyComment)).items,
+  })
+  for (const report of reports) await ws.writeGenerated(`${archiveDir(report.weekStart)}/周报.md`, renderWeeklyReport(report))
 
   // 归档：有内容的每天一份
   const recentFrom = shiftDate(today, -(options.recentDays ?? 14))

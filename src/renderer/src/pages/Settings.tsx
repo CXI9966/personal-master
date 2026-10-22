@@ -3,6 +3,7 @@ import { ErrorNote } from '../components/Notices'
 import PersonaEditor from '../components/PersonaEditor'
 import ProfileForm from '../components/ProfileForm'
 import SettingsGeneral from '../components/SettingsGeneral'
+import SettingsReminders from '../components/SettingsReminders'
 import UsagePanel from '../components/UsagePanel'
 import { useAction } from '../hooks/useAction'
 import { useSnapshot } from '../hooks/useSnapshot'
@@ -26,6 +27,7 @@ export default function Settings() {
       </section>
 
       <SettingsGeneral settings={data.settings} act={act} />
+      <SettingsReminders reminders={data.settings.reminders} autostart={data.autostart} act={act} />
       <ProfileForm profile={data.profile} act={act} />
 
       <section className="card" aria-labelledby="model-title">

@@ -78,8 +78,9 @@ describe('buildRecords', () => {
 
 describe('buildSettings', () => {
   it('带上工作区路径、设置和目标', async () => {
-    const snapshot = await buildSettings(ctx(), test.root)
+    const snapshot = await buildSettings(ctx(), test.root, { supported: false, enabled: false })
     expect(snapshot.workspaceRoot).toBe(test.root)
+    expect(snapshot.autostart).toEqual({ supported: false, enabled: false })
     expect(snapshot.settings.dayStartsAt).toBe('04:00')
     expect(snapshot.profile.goals.weightTargetKg).toBeNull()
   })

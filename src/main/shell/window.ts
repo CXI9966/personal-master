@@ -5,6 +5,8 @@ export interface WindowOptions {
   icon: NativeImage
   /** 应用正在退出：关窗口时才真的关闭，否则只是收进托盘 */
   isQuitting: () => boolean
+  /** 开机自启时不弹出窗口，只留在托盘 */
+  startHidden?: boolean
 }
 
 export function createMainWindow(options: WindowOptions): BrowserWindow {
@@ -25,7 +27,9 @@ export function createMainWindow(options: WindowOptions): BrowserWindow {
       nodeIntegration: false,
     },
   })
-  win.once('ready-to-show', () => win.show())
+  win.once('ready-to-show', () => {
+    if (!options.startHidden) win.show()
+  })
 
   // 点关闭只是收进托盘，打卡和提醒还要继续
   win.on('close', (event) => {

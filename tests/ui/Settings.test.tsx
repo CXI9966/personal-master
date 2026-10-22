@@ -7,7 +7,7 @@ import type { SettingsSnapshot } from '../../src/shared/views'
 import { installButler } from './butlerMock'
 
 function setup(profile: ProfileFile = emptyProfile()) {
-  const snapshot: SettingsSnapshot = { workspaceRoot: 'D:\\我的工作区', settings: defaultSettings(), profile }
+  const snapshot: SettingsSnapshot = { workspaceRoot: 'D:\\我的工作区', settings: defaultSettings(), profile, autostart: { supported: true, enabled: false } }
   const butler = installButler({
     'settings:get': () => snapshot,
     'settings:update': undefined,

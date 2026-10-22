@@ -16,6 +16,8 @@ import {
 import type { AiService } from '../ai/service'
 import type { Session } from '../app/session'
 import { buildDay, buildRecords, buildSettings, buildToday, checkHealth } from '../app/snapshots'
+import { buildWeeklyReports } from '../app/weekly'
+import { DomainError } from '../domain/errors'
 import { loadTasks } from '../domain/load'
 import { PERSONA_PRESETS } from '../init/personas'
 import { joinPersona } from '../../shared/persona'
@@ -56,10 +58,17 @@ export function createHandlers(session: Session, platform: Platform, ai: AiServi
     'weight:add': ({ kg }) => logWeight(ctx(), s.weight.parse(kg)),
     'workout:add': (input) => logWorkout(ctx(), s.workout.parse(input)),
     'records:get': () => buildRecords(ctx()),
+    'weekly:list': () => buildWeeklyReports(ctx()),
+    'weekly:comment': ({ weekStart }) => ai.commentWeek(s.date.parse(weekStart)),
 
-    'settings:get': async () => buildSettings(ctx(), (await session.state()).workspaceRoot ?? ''),
+    'settings:get': async () => buildSettings(ctx(), (await session.state()).workspaceRoot ?? '', platform.getAutostart()),
     'settings:update': (patch) => changeSettings(ctx(), s.settingsPatch.parse(patch)),
     'profile:update': ({ profile }) => changeProfile(ctx(), s.profile.parse(profile)),
+    'autostart:set': async ({ enabled }) => {
+      if (!platform.getAutostart().supported) throw new DomainError('invalid', '开机自启只有安装好的版本才能设置，现在是开发模式')
+      platform.setAutostart(z.boolean().parse(enabled))
+      return platform.getAutostart()
+    },
 
     'history:last': async () => ctx().ws.lastChange(),
     'history:undo': ({ changeId }) => undoChange(ctx(), Id.parse(changeId)),

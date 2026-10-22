@@ -152,3 +152,48 @@ describe('第一次运行到打卡的完整流程', () => {
     await tmp.cleanup()
   })
 })
+
+describe('周报和开机自启通道', () => {
+  async function ready() {
+    const env = setup()
+    const tmp = await makeTempDir()
+    await env.session.initialize(tmp.dir, 'coach')
+    return {
+      ...env,
+      close: async () => {
+        await env.session.close()
+        await tmp.cleanup()
+      },
+    }
+  }
+
+  it('weekly:list：刚开始用是空的；weekly:comment 参数不对是 bad-request，没有这一周的周报时说清楚', async () => {
+    const { ipc, close } = await ready()
+    expect(await ipc.call('weekly:list')).toEqual({ ok: true, data: [] })
+    expect(await ipc.call('weekly:comment', { weekStart: '上周' })).toMatchObject({ ok: false, code: 'bad-request' })
+    expect(await ipc.call('weekly:comment', { weekStart: '2026-10-12' })).toMatchObject({ ok: false, error: expect.stringContaining('还没有可以点评的周报') })
+    await close()
+  })
+
+  it('settings:get 带上开机自启的状态', async () => {
+    const { ipc, platform, close } = await ready()
+    platform.autostart = { supported: false, enabled: false }
+    expect(await ipc.call('settings:get')).toMatchObject({ ok: true, data: { autostart: { supported: false, enabled: false } } })
+    await close()
+  })
+
+  it('autostart:set：支持时改成功并返回新状态；不支持（开发模式）时说明原因', async () => {
+    const { ipc, platform, close } = await ready()
+    expect(await ipc.call('autostart:set', { enabled: true })).toEqual({ ok: true, data: { supported: true, enabled: true } })
+    expect(platform.autostart.enabled).toBe(true)
+    expect(await ipc.call('autostart:set', { enabled: false })).toEqual({ ok: true, data: { supported: true, enabled: false } })
+
+    platform.autostart = { supported: false, enabled: false }
+    expect(await ipc.call('autostart:set', { enabled: true })).toMatchObject({ ok: false, error: expect.stringContaining('只有安装好的版本') })
+    expect(platform.autostart.enabled).toBe(false)
+
+    platform.autostart = { supported: true, enabled: false }
+    expect(await ipc.call('autostart:set', { enabled: '开' })).toMatchObject({ ok: false, code: 'bad-request' })
+    await close()
+  })
+})

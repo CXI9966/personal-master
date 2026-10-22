@@ -55,6 +55,10 @@ export const UsageEntry = z.looseObject({
 })
 export type UsageEntry = z.infer<typeof UsageEntry>
 
+/** 管家对某一周的点评（生成一次，之后写进周报） */
+export const WeeklyComment = z.looseObject({ id: Id, weekStart: YMD, at: OffsetDateTime, text: z.string().min(1) })
+export type WeeklyComment = z.infer<typeof WeeklyComment>
+
 // ---------- 状态文件（JSON，整体替换） ----------
 export const Task = z.looseObject({
   id: Id,

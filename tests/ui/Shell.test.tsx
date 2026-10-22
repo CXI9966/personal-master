@@ -14,7 +14,8 @@ const baseHandlers = {
   'today:get': todayFixture(),
   'tasks:get': emptyTasks(),
   'records:get': { today: '2026-10-23', heatmap: makeCells('2026-01-05', 53 * 7, '2026-10-23'), checkins: [], weights: [], weightTargetKg: null, workouts: [], learning: [], warnings: [] },
-  'settings:get': { workspaceRoot: 'D:\\我的工作区', settings: defaultSettings(), profile: emptyProfile() },
+  'settings:get': { workspaceRoot: 'D:\\我的工作区', settings: defaultSettings(), profile: emptyProfile(), autostart: { supported: false, enabled: false } },
+  'weekly:list': [],
   'history:last': null,
   'data:health': [],
 }

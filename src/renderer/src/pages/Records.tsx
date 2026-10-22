@@ -3,6 +3,7 @@ import DayDetail from '../components/DayDetail'
 import Heatmap from '../components/Heatmap'
 import { ErrorNote, Warnings } from '../components/Notices'
 import { CheckinTable, LearningList, WeightTable, WorkoutTable } from '../components/RecordTables'
+import WeeklyReports from '../components/WeeklyReports'
 import { useAction } from '../hooks/useAction'
 import { useSnapshot } from '../hooks/useSnapshot'
 
@@ -41,6 +42,11 @@ export default function Records() {
         <h2 id="year-title">全年日历</h2>
         <Heatmap cells={data.heatmap} label="最近一年的记录" selected={selected} onSelect={(d) => setSelected(d === selected ? null : d)} />
         {selected && <DayDetail date={selected} onClose={() => setSelected(null)} />}
+      </section>
+
+      <section className="card" aria-labelledby="weekly-title">
+        <h2 id="weekly-title">周报</h2>
+        <WeeklyReports />
       </section>
 
       <section className="card" aria-labelledby="checkins-title">

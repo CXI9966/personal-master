@@ -18,6 +18,8 @@ export interface LaunchOptions {
   env?: Record<string, string>
   /** 复用已有的 userData 目录（重启应用时用）；传了就不会在 cleanup 时删掉 */
   userData?: string
+  /** 额外的命令行参数，例如 --hidden */
+  args?: string[]
 }
 
 /** 和应用同一套规则：凌晨 4 点前算前一天（用本机时间） */
@@ -54,7 +56,7 @@ export async function launchButler(options: LaunchOptions = {}): Promise<Launche
   const owned = options.userData ? null : makeTempDir()
   const userData = options.userData ?? owned!.dir
   const app = await electron.launch({
-    args: ['.'],
+    args: ['.', ...(options.args ?? [])],
     env: electronEnv({ BUTLER_USER_DATA_DIR: userData, ...options.env }),
   })
   const window = await app.firstWindow()

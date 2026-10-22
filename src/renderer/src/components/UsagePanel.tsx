@@ -1,10 +1,8 @@
-import type { AiScene } from '../../../shared/ai'
 import { weekdayName } from '../../../shared/calendar'
+import { FEATURE_NAMES, FEATURES } from '../../../shared/usageText'
 import { useSnapshot } from '../hooks/useSnapshot'
 import { ErrorNote } from './Notices'
 
-const FEATURE_NAMES: Record<AiScene, string> = { chat: '聊天', plan: '排计划', review: '复盘检验', weekly: '周报点评' }
-const FEATURES = Object.keys(FEATURE_NAMES) as AiScene[]
 const n = (value: number): string => value.toLocaleString('zh-CN')
 
 /** 本周管家用了多少 token，按功能、按天 */

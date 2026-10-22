@@ -2,7 +2,7 @@ import type { ZodType } from 'zod'
 import { daysBetween, shiftDate, weekdayName, weekdayOf } from '../../shared/calendar'
 import { PATHS, planPath } from '../../shared/paths'
 import { PlanFile, ProfileFile, SettingsFile, TasksFile } from '../../shared/schema'
-import type { DaySnapshot, HealthProblem, RecordsSnapshot, SettingsSnapshot, TodaySnapshot } from '../../shared/views'
+import type { AutostartInfo, DaySnapshot, HealthProblem, RecordsSnapshot, SettingsSnapshot, TodaySnapshot } from '../../shared/views'
 import { checkinsByDay, pickCheckins } from '../domain/checkin'
 import { logicalDateOf, logicalToday } from '../domain/day'
 import { collectDays, dayScore, heatmapCells, scoresByDay } from '../domain/heatmap'
@@ -69,8 +69,8 @@ export async function buildRecords(ctx: AppContext): Promise<RecordsSnapshot> {
   }
 }
 
-export async function buildSettings(ctx: AppContext, workspaceRoot: string): Promise<SettingsSnapshot> {
-  return { workspaceRoot, settings: await loadSettings(ctx.ws), profile: await loadProfile(ctx.ws) }
+export async function buildSettings(ctx: AppContext, workspaceRoot: string, autostart: AutostartInfo): Promise<SettingsSnapshot> {
+  return { workspaceRoot, settings: await loadSettings(ctx.ws), profile: await loadProfile(ctx.ws), autostart }
 }
 
 /** 核心数据文件（设置、目标、任务库、今天的计划）有没有读不出来的 */

@@ -3,6 +3,7 @@ import type { AppConfig, Platform } from '../../../src/main/app/context'
 import type { SecretStore } from '../../../src/main/app/secrets'
 import { DomainError } from '../../../src/main/domain/errors'
 import type { AiEvent } from '../../../src/shared/ai'
+import type { AutostartInfo } from '../../../src/shared/views'
 import { createSession, type Session } from '../../../src/main/app/session'
 import type { PersonaId } from '../../../src/shared/persona'
 import { makeTempDir } from '../store/helpers'
@@ -15,6 +16,8 @@ export interface FakePlatform extends Platform {
   aiEvents: AiEvent[]
   notifications: Array<'local' | 'external'>
   picked: string | null
+  reminders: Array<{ title: string; body: string }>
+  autostart: AutostartInfo
 }
 
 export function fakePlatform(defaultRoot = 'C:\\默认\\Butler'): FakePlatform {
@@ -23,6 +26,8 @@ export function fakePlatform(defaultRoot = 'C:\\默认\\Butler'): FakePlatform {
     aiEvents: [],
     notifications: [],
     picked: null,
+    reminders: [],
+    autostart: { supported: true, enabled: false },
     pickFolder: async () => platform.picked,
     defaultRoot: () => defaultRoot,
     readConfig: async () => ({ ...platform.config }),
@@ -34,6 +39,13 @@ export function fakePlatform(defaultRoot = 'C:\\默认\\Butler'): FakePlatform {
     },
     notifyAi: (event) => {
       platform.aiEvents.push(event)
+    },
+    showReminder: (message) => {
+      platform.reminders.push(message)
+    },
+    getAutostart: () => ({ ...platform.autostart }),
+    setAutostart: (enabled) => {
+      platform.autostart = { ...platform.autostart, enabled }
     },
   }
   return platform

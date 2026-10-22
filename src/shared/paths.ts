@@ -8,6 +8,7 @@ export const PATHS = {
   workouts: 'data/workouts.jsonl',
   learning: 'data/learning.jsonl',
   usage: 'data/usage.jsonl',
+  weeklyComments: 'data/weekly-comments.jsonl',
   plansDir: 'data/plans',
   persona: '管家人格.md',
   schedule: '课表.md',

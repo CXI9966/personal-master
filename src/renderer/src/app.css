@@ -666,3 +666,31 @@ input[type='password'] {
 form > .error {
   margin-top: 0.4rem;
 }
+
+/* ---------- 周报 ---------- */
+.week-report {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem 0.8rem;
+  margin-bottom: 0.6rem;
+}
+
+.week-report summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.week-comment {
+  margin: 0.6rem 0;
+  padding: 0.2rem 0.8rem;
+  border-left: 4px solid var(--accent);
+  background: var(--bg);
+}
+
+.week-comment p {
+  white-space: pre-wrap;
+}
+
+.week-comment footer {
+  margin-bottom: 0.4rem;
+}

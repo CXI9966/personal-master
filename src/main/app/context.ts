@@ -1,4 +1,5 @@
 import type { AiEvent } from '../../shared/ai'
+import type { AutostartInfo } from '../../shared/views'
 import type { Workspace } from '../store/types'
 
 export interface AppConfig {
@@ -19,6 +20,11 @@ export interface Platform {
   notifyDataChanged(reason: 'local' | 'external'): void
   /** 管家对话的进展（文字、动作卡片、错误……）推给界面 */
   notifyAi(event: AiEvent): void
+  /** 弹一条系统通知；点击通知会把窗口带到前面 */
+  showReminder(message: { title: string; body: string }): void
+  /** 开机自启是这台电脑的设置，不放在工作区里 */
+  getAutostart(): AutostartInfo
+  setAutostart(enabled: boolean): void
 }
 
 /** 打开工作区之后，所有服务共用的上下文 */

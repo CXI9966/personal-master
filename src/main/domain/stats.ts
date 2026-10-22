@@ -1,4 +1,5 @@
 import type { CheckResult, HeatmapWeights } from '../../shared/schema'
+import type { WeekRow } from '../../shared/views'
 import { checkinsByDay } from './checkin'
 import { clockOf, datesBetween, isoWeekOf, logicalDateOf, minutesOfDay, shiftDate, startOfWeek, wallMinutesOf } from './day'
 import { collectDays, dayScore, type Sources } from './heatmap'
@@ -111,14 +112,7 @@ export function weeklyStats(
   return stats
 }
 
-export interface WeekRow {
-  date: string
-  /** 打卡的 HH:mm，没打卡为 null */
-  wake: string | null
-  sleep: string | null
-  tasksDone: number
-  score: number
-}
+export type { WeekRow }
 
 /** 一周里每天一行，供本周视图和周报使用 */
 export function weekRows(

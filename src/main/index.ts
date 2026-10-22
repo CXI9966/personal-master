@@ -1,15 +1,18 @@
-import { app, dialog, ipcMain, Menu, nativeImage, safeStorage, type BrowserWindow } from 'electron'
+import { app, dialog, ipcMain, Menu, nativeImage, powerMonitor, safeStorage, type BrowserWindow } from 'electron'
 import { join } from 'node:path'
 import { createAiService } from './ai/service'
 import { createFileConfigStore } from './app/config'
 import type { Platform } from './app/context'
 import { makeIconPng } from './app/icon'
+import { createFileLedger } from './app/reminders'
 import { createSecretStore } from './app/secrets'
 import { createSession } from './app/session'
 import { buildToday } from './app/snapshots'
+import { createTicker } from './app/ticker'
 import { buildTrayModel, performTrayAction } from './app/trayModel'
 import { createHandlers } from './ipc'
 import { registerIpc } from './ipc/register'
+import { showNotification } from './shell/notify'
 import { createTray, type TrayController } from './shell/tray'
 import { createMainWindow, showWindow } from './shell/window'
 
@@ -18,6 +21,11 @@ const userDataDir = process.env.BUTLER_USER_DATA_DIR
 if (userDataDir) app.setPath('userData', userDataDir)
 
 const log = (message: string): void => console.warn(`[butler] ${message}`)
+
+// 开机自启时带上这个参数，启动后只留在托盘，不弹窗口
+const HIDDEN_FLAG = '--hidden'
+// 每隔多久检查一次“是不是新的一天、该不该提醒”；测试里可以调短
+const TICK_MS = Number(process.env.BUTLER_TICK_MS) > 0 ? Number(process.env.BUTLER_TICK_MS) : 60_000
 
 // 只接受来自我们自己页面的请求：打包后是 file://，开发时是 Vite 的开发服务器
 const devUrl = process.env.ELECTRON_RENDERER_URL
@@ -31,6 +39,7 @@ async function start(): Promise<void> {
   let window: BrowserWindow | null = null
   let tray: TrayController | null = null
   let trayTimer: ReturnType<typeof setTimeout> | undefined
+  let tickTimer: ReturnType<typeof setInterval> | undefined
   let quitting = false
   let cleanedUp = false
 
@@ -51,6 +60,15 @@ async function start(): Promise<void> {
     notifyAi(event) {
       if (window && !window.isDestroyed()) window.webContents.send('ai:event', event)
     },
+    showReminder: (message) => showNotification(message, () => showWindow(window)),
+    // 开机自启只对安装好的版本有意义；开发时（electron . 启动）不去动系统的启动项
+    getAutostart: () =>
+      app.isPackaged
+        ? { supported: true, enabled: app.getLoginItemSettings({ args: [HIDDEN_FLAG] }).openAtLogin }
+        : { supported: false, enabled: false },
+    setAutostart(enabled) {
+      if (app.isPackaged) app.setLoginItemSettings({ openAtLogin: enabled, args: [HIDDEN_FLAG] })
+    },
   }
   const session = createSession({ platform, onWarn: log })
   // API key 用系统的加密存储（Windows 上是 DPAPI）保存在应用数据目录里，不进工作区
@@ -60,6 +78,7 @@ async function start(): Promise<void> {
     decrypt: (data) => safeStorage.decryptString(data),
   })
   const ai = createAiService({ session, secrets, platform, encryptionAvailable: () => safeStorage.isEncryptionAvailable() })
+  const ticker = createTicker({ session, platform, ledger: createFileLedger(app.getPath('userData')), onWarn: log })
 
   async function updateTray(): Promise<void> {
     if (!tray) return
@@ -77,6 +96,7 @@ async function start(): Promise<void> {
   app.on('second-instance', () => showWindow(window))
   app.on('before-quit', (event) => {
     quitting = true
+    clearInterval(tickTimer)
     if (cleanedUp) return
     // 退出前先把还没渲染的视图渲染掉、关掉工作区，再真正退出
     event.preventDefault()
@@ -94,7 +114,7 @@ async function start(): Promise<void> {
   await session.restore()
 
   const icon = nativeImage.createFromBuffer(makeIconPng(256))
-  window = createMainWindow({ icon, isQuitting: () => quitting })
+  window = createMainWindow({ icon, isQuitting: () => quitting, startHidden: process.argv.includes(HIDDEN_FLAG) })
   tray = createTray({
     icon,
     onActivate: () => showWindow(window),
@@ -108,6 +128,11 @@ async function start(): Promise<void> {
     },
   })
   await updateTray()
+
+  // 定时检查：跨到新的一天要重新生成视图，到点了要提醒。电脑从睡眠里醒来也马上查一次
+  void ticker.tick()
+  tickTimer = setInterval(() => void ticker.tick(), TICK_MS)
+  powerMonitor.on('resume', () => void ticker.tick())
 }
 
 if (!app.requestSingleInstanceLock()) app.quit()

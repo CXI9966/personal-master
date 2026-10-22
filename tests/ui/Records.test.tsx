@@ -28,7 +28,7 @@ const SNAPSHOT: RecordsSnapshot = {
 }
 
 function setup(snapshot: RecordsSnapshot = SNAPSHOT) {
-  const butler = installButler({ 'records:get': () => snapshot, 'weight:add': undefined, 'workout:add': undefined })
+  const butler = installButler({ 'records:get': () => snapshot, 'weekly:list': [], 'weight:add': undefined, 'workout:add': undefined })
   render(<Records />)
   return butler
 }
@@ -100,6 +100,7 @@ describe('记录页：录入', () => {
     const user = userEvent.setup()
     installButler({
       'records:get': SNAPSHOT,
+      'weekly:list': [],
       'day:get': { date: '2026-10-22', weekday: '周四', score: 0, plan: { version: 1, date: '2026-10-22', energy: null, timeline: [], taskIds: [], review: null }, planTasks: [], doneTasks: [], wake: null, sleep: null, weights: [], workouts: [], learning: [] },
     })
     render(<Records />)

@@ -15,6 +15,7 @@ import type { PersonaId, PersonaSections } from './persona'
 import type { ActionMode, Checkin, ContextStrategy, Energy, ProfileFile, Task, TasksFile, TimelineItem } from './schema'
 import type {
   AppState,
+  AutostartInfo,
   ChangeInfo,
   DaySnapshot,
   HealthProblem,
@@ -24,6 +25,7 @@ import type {
   SettingsSnapshot,
   TaskPatch,
   TodaySnapshot,
+  WeeklyReportView,
 } from './views'
 
 export interface IpcMap {
@@ -59,10 +61,16 @@ export interface IpcMap {
   'weight:add': { req: { kg: number }; res: void }
   'workout:add': { req: { summary: string; durationMin: number | null }; res: void }
   'records:get': { req: void; res: RecordsSnapshot }
+  /** 已经结束、有记录的最近几周的周报，最新的在前 */
+  'weekly:list': { req: void; res: WeeklyReportView[] }
+  /** 让管家点评某一周（传周一的日期），点评会存下来 */
+  'weekly:comment': { req: { weekStart: string }; res: { text: string } }
   // ---- 设置 ----
   'settings:get': { req: void; res: SettingsSnapshot }
   'settings:update': { req: SettingsPatch; res: void }
   'profile:update': { req: { profile: ProfileFile }; res: void }
+  /** 开机自启（这台电脑的设置，不属于工作区）。开发时不支持，会报错 */
+  'autostart:set': { req: { enabled: boolean }; res: AutostartInfo }
   // ---- 历史和数据健康 ----
   /** 最近一次可撤销的改动 */
   'history:last': { req: void; res: ChangeInfo | null }
@@ -123,9 +131,12 @@ const channelTable = {
   'weight:add': true,
   'workout:add': true,
   'records:get': true,
+  'weekly:list': true,
+  'weekly:comment': true,
   'settings:get': true,
   'settings:update': true,
   'profile:update': true,
+  'autostart:set': true,
   'history:last': true,
   'history:undo': true,
   'history:restore': true,

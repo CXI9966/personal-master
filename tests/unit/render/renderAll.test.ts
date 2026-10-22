@@ -6,7 +6,7 @@ import { renderAll } from '../../../src/main/render'
 import { openWorkspace, type Workspace } from '../../../src/main/store/workspace'
 import { GENERATED_MARKER } from '../../../src/shared/labels'
 import { PATHS, planPath } from '../../../src/shared/paths'
-import { Checkin, emptyPlan, PlanFile, TasksFile } from '../../../src/shared/schema'
+import { Checkin, emptyPlan, PlanFile, TasksFile, WeeklyComment } from '../../../src/shared/schema'
 import { addTask } from '../../../src/main/domain/tasks'
 import { makeTempDir, sleep } from '../store/helpers'
 
@@ -100,5 +100,77 @@ describe('renderAll', () => {
     for (const rel of ['今日.md', '本周.md', '我的设定.md', '记录/打卡.md', '记录/体重.md', '任务库/收集箱.md']) {
       expect(await read(rel), rel).not.toMatch(/缺勤|断网/)
     }
+  })
+})
+
+describe('renderAll：周报', () => {
+  const putCheckin = (n: number, at: string): Promise<void> =>
+    ws.appendLine(PATHS.checkins, { id: id(n), type: 'wake', at, source: 'desktop' }, Checkin)
+  const REPORT = '归档/2026/2026-W42/周报.md'
+
+  it('结束了的周（有记录）会生成周报；本周和没有记录的周不生成', async () => {
+    await putCheckin(1, '2026-10-13T07:00:00+08:00') // W42
+    await putCheckin(2, '2026-10-21T07:00:00+08:00') // 本周 W43
+    await renderAll(ws, { now: NOW })
+    const report = await read(REPORT)
+    expect(report.split('\n')[0]).toBe(GENERATED_MARKER)
+    expect(report).toContain('# 周报 · 2026-W42（2026-10-12 ~ 2026-10-18）')
+    expect(report).toContain('起床打卡 1/7 天')
+    expect(await ws.readText('归档/2026/2026-W43/周报.md')).toBeNull()
+    expect(await ws.readText('归档/2026/2026-W41/周报.md')).toBeNull()
+  })
+
+  it('点评存下来之后，周报里就有；内容没变的周报不重写', async () => {
+    await putCheckin(1, '2026-10-13T07:00:00+08:00')
+    await renderAll(ws, { now: NOW })
+    expect(await read(REPORT)).toContain('还没有点评')
+    const before = (await stat(join(ctx.dir, REPORT))).mtimeMs
+
+    await sleep(30)
+    await renderAll(ws, { now: NOW })
+    expect((await stat(join(ctx.dir, REPORT))).mtimeMs).toBe(before)
+
+    await ws.appendLine(
+      PATHS.weeklyComments,
+      { id: id(9), weekStart: '2026-10-12', at: '2026-10-20T09:00:00+08:00', text: '起得很稳。' },
+      WeeklyComment,
+    )
+    await renderAll(ws, { now: NOW })
+    expect(await read(REPORT)).toContain('起得很稳。')
+  })
+
+  it('平时只看最近 4 周，full 时回溯更早的', async () => {
+    await putCheckin(1, '2026-08-05T07:00:00+08:00') // W32，早于最近 4 周
+    await renderAll(ws, { now: NOW })
+    expect(await ws.readText('归档/2026/2026-W32/周报.md')).toBeNull()
+    await renderAll(ws, { now: NOW, full: true })
+    expect(await read('归档/2026/2026-W32/周报.md')).toContain('# 周报 · 2026-W32')
+  })
+})
+
+describe('renderAll：周报什么时候出', () => {
+  const putCheckin = (n: number, at: string): Promise<void> =>
+    ws.appendLine(PATHS.checkins, { id: id(n), type: 'wake', at, source: 'desktop' }, Checkin)
+
+  it('这一周还没过完（周日）不出；进入新的一周（周一）才出，而且只是同一份文件', async () => {
+    await putCheckin(1, '2026-10-13T07:00:00+08:00') // W42 的周二
+    await renderAll(ws, { now: new Date('2026-10-18T12:00:00+08:00') }) // W42 的周日
+    expect(await ws.readText('归档/2026/2026-W42/周报.md')).toBeNull()
+
+    await renderAll(ws, { now: new Date('2026-10-19T00:30:00+08:00') }) // 周一凌晨，换日时间之前，还算周日
+    expect(await ws.readText('归档/2026/2026-W42/周报.md')).toBeNull()
+
+    await renderAll(ws, { now: new Date('2026-10-19T09:00:00+08:00') })
+    const first = await read('归档/2026/2026-W42/周报.md')
+    expect(first).toContain('# 周报 · 2026-W42')
+    await renderAll(ws, { now: new Date('2026-10-20T09:00:00+08:00') })
+    expect(await read('归档/2026/2026-W42/周报.md')).toBe(first)
+  })
+
+  it('第 53 周的周报放在 2026 年的目录里，哪怕已经是 2027 年了', async () => {
+    await putCheckin(1, '2026-12-30T07:00:00+08:00')
+    await renderAll(ws, { now: new Date('2027-01-05T12:00:00+08:00') })
+    expect(await read('归档/2026/2026-W53/周报.md')).toContain('# 周报 · 2026-W53（2026-12-28 ~ 2027-01-03）')
+    expect(await ws.readText('归档/2027/2027-W01/周报.md')).toBeNull()
   })
 })

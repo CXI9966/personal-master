@@ -1,5 +1,6 @@
 // 主进程推给界面的数据形状。界面不直接读文件，也不自己算分，只显示这些快照。
 
+import type { UsageSummary } from './ai'
 import type {
   Checkin,
   FixedItem,
@@ -81,10 +82,17 @@ export interface RecordsSnapshot {
   warnings: string[]
 }
 
+/** 开机自启：只有安装好的版本能设；开发时 supported 为 false */
+export interface AutostartInfo {
+  supported: boolean
+  enabled: boolean
+}
+
 export interface SettingsSnapshot {
   workspaceRoot: string
   settings: SettingsFile
   profile: ProfileFile
+  autostart: AutostartInfo
 }
 
 export interface SettingsPatch {
@@ -100,6 +108,29 @@ export interface SettingsPatch {
 export interface HealthProblem {
   rel: string
   message: string
+}
+
+/** 一周里的一天（本周视图和周报都用） */
+export interface WeekRow {
+  date: string
+  /** 打卡的 HH:mm，没打卡为 null */
+  wake: string | null
+  sleep: string | null
+  tasksDone: number
+  score: number
+}
+
+/** 一份周报：只在这一周结束之后才有 */
+export interface WeeklyReportView {
+  weekKey: string
+  weekStart: string
+  weekEnd: string
+  /** 全是正向口径：只说做到的 */
+  lines: string[]
+  rows: WeekRow[]
+  usage: UsageSummary
+  /** 管家的点评；还没点评过就是 null */
+  comment: { text: string; at: string } | null
 }
 
 export interface TodaySnapshot {

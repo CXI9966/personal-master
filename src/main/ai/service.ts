@@ -10,10 +10,12 @@ import type { AppContext, Platform } from '../app/context'
 import type { SecretStore } from '../app/secrets'
 import { changeSettings, savePersonaText } from '../app/services-records'
 import type { Session } from '../app/session'
+import { buildWeeklyReports, saveWeeklyComment } from '../app/weekly'
 import { ActionEngine } from './engine'
 import { createModel, normalizeBaseURL, testConnection } from './provider'
 import { runChat } from './runner'
 import { summarizeUsage } from './usage'
+import { commentOnWeek } from './weeklyComment'
 
 /** API key 在密钥存储里的名字 */
 export const KEY_NAME = 'model-key'
@@ -39,6 +41,8 @@ export interface AiService {
   /** 新对话：清掉还没确认的卡片 */
   reset(): void
   usage(): Promise<UsageSummary>
+  /** 让管家点评一个已经结束的周（传周一的日期）；点评存进数据里，下次打开还在 */
+  commentWeek(weekStart: string): Promise<{ text: string }>
   persona(): Promise<{ markdown: string; sections: PersonaSections | null }>
   savePersona(markdown: string): Promise<void>
 }
@@ -141,6 +145,18 @@ export function createAiService(deps: AiServiceDeps): AiService {
       const ctx = session.ctx()
       const { dayStartsAt } = await loadSettings(ctx.ws)
       return summarizeUsage(ctx, logicalToday(dayStartsAt, ctx.now()))
+    },
+
+    async commentWeek(weekStart) {
+      const ctx = session.ctx()
+      const view = (await buildWeeklyReports(ctx, { weeks: 104 })).find((v) => v.weekStart === weekStart)
+      if (!view) throw new DomainError('not-found', '这一周还没有可以点评的周报：要等这一周结束，而且有记录')
+      const settings = await loadSettings(ctx.ws)
+      const model = createModel({ ...settings.provider, apiKey: (await secrets.get(KEY_NAME)) ?? '' }) // 没配置好会在这里报错
+      const persona = (await ctx.ws.readText(PATHS.persona)) ?? ''
+      const text = await commentOnWeek({ ctx, model, provider: { kind: settings.provider.kind, model: settings.provider.model }, persona, view })
+      await saveWeeklyComment(ctx, weekStart, text)
+      return { text }
     },
 
     async persona() {

@@ -121,3 +121,39 @@ describe('数据健康提示', () => {
     expect(screen.queryByRole('alert', { name: '数据文件有问题' })).toBeNull()
   })
 })
+
+describe('管家输入框里没发出去的字', () => {
+  const BOX = '给管家发消息'
+  const nav = () => screen.getByRole('navigation', { name: '主导航' })
+  const box = async () => (await screen.findByLabelText(BOX)) as HTMLTextAreaElement
+
+  it('切到别的页面再回来，字还在', async () => {
+    const user = userEvent.setup()
+    installButler(baseHandlers)
+    render(<Shell />)
+    await user.click(within(nav()).getByRole('button', { name: '管家' }))
+    await user.type(await box(), '明天下午想去健身房')
+
+    await user.click(within(nav()).getByRole('button', { name: '任务' }))
+    expect(await screen.findByRole('heading', { name: '任务' })).toBeTruthy()
+    await user.click(within(nav()).getByRole('button', { name: '设置' }))
+    expect(await screen.findByRole('heading', { name: '设置' })).toBeTruthy()
+
+    await user.click(within(nav()).getByRole('button', { name: '管家' }))
+    expect((await box()).value).toBe('明天下午想去健身房')
+  })
+
+  it('发出去之后输入框清空；点“新对话”不会清掉新写了一半的字', async () => {
+    const user = userEvent.setup()
+    installButler({ ...baseHandlers, 'ai:send': { runId: 'r1' }, 'ai:reset': undefined })
+    render(<Shell />)
+    await user.click(within(nav()).getByRole('button', { name: '管家' }))
+    await user.type(await box(), '你好')
+    await user.click(screen.getByRole('button', { name: '发送' }))
+    expect((await box()).value).toBe('')
+
+    await user.type(await box(), '第二句还没写完')
+    await user.click(screen.getByRole('button', { name: '新对话' }))
+    expect((await box()).value).toBe('第二句还没写完')
+  })
+})

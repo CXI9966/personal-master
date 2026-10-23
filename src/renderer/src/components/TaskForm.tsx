@@ -4,6 +4,9 @@ import type { NewTaskInput } from '../../../shared/views'
 interface Props {
   lists: string[]
   initial?: { title: string; list: string; due: string | null; checkpoints: string[]; notes: string }
+  /** 由页面决定选中哪个清单（清单改名、新建时页面会跟着改）；不传就表单自己记 */
+  list?: string
+  onListChange?: (name: string) => void
   /** 提交按钮上的字 */
   submitLabel: string
   /** 区分页面上多个表单，用在 aria-label 和 id 里 */
@@ -21,9 +24,17 @@ const splitCheckpoints = (text: string): string[] =>
     .filter(Boolean)
 
 /** 新建和编辑任务共用的表单 */
-export default function TaskForm({ lists, initial, submitLabel, idPrefix, busy, onSubmit, onCancel }: Props) {
+export default function TaskForm({ lists, initial, list: controlledList, onListChange, submitLabel, idPrefix, busy, onSubmit, onCancel }: Props) {
   const [title, setTitle] = useState(initial?.title ?? '')
-  const [list, setList] = useState(initial?.list ?? lists[0] ?? '')
+  const [ownList, setOwnList] = useState(initial?.list ?? lists[0] ?? '')
+  // 选中的清单可能已经不在了（被改名、被删掉）。这时先用任务现在所在的清单，再退回第一个，
+  // 保证下拉框里看到的就是提交出去的，不会悄悄把任务放进一个看不见的旧清单
+  const wanted = controlledList ?? ownList
+  const list = [wanted, initial?.list].find((name) => name !== undefined && lists.includes(name)) ?? lists[0] ?? ''
+  const chooseList = (name: string): void => {
+    setOwnList(name)
+    onListChange?.(name)
+  }
   const [due, setDue] = useState(initial?.due ?? '')
   const [checkpoints, setCheckpoints] = useState(initial?.checkpoints.join('；') ?? '')
   const [notes, setNotes] = useState(initial?.notes ?? '')
@@ -48,7 +59,7 @@ export default function TaskForm({ lists, initial, submitLabel, idPrefix, busy, 
       <div className="field-row">
         <div className="field">
           <label htmlFor={`${idPrefix}-list`}>清单</label>
-          <select id={`${idPrefix}-list`} value={list} onChange={(e) => setList(e.target.value)}>
+          <select id={`${idPrefix}-list`} value={list} onChange={(e) => chooseList(e.target.value)}>
             {lists.map((name) => (
               <option key={name} value={name}>
                 {name}

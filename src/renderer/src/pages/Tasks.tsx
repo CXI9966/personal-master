@@ -12,6 +12,8 @@ export default function Tasks() {
   const [editing, setEditing] = useState<string | null>(null)
   const [renaming, setRenaming] = useState<{ from: string; to: string } | null>(null)
   const [newList, setNewList] = useState('')
+  // 新建任务表单选中的清单。没选过就是第一个；改名、新建清单时跟着变
+  const [newTaskList, setNewTaskList] = useState<string | undefined>(undefined)
 
   if (error) return <ErrorNote message={error} />
   if (!data) return <p className="hint">加载中…</p>
@@ -21,12 +23,19 @@ export default function Tasks() {
 
   async function addList(event: FormEvent): Promise<void> {
     event.preventDefault()
-    if (await act.run(() => window.butler.invoke('lists:add', { name: newList }))) setNewList('')
+    if (await act.run(() => window.butler.invoke('lists:add', { name: newList }))) {
+      setNewTaskList(newList.trim()) // 新建清单多半是马上要往里放任务，新建任务的表单直接选上它
+      setNewList('')
+    }
   }
 
   async function renameList(event: FormEvent): Promise<void> {
     event.preventDefault()
-    if (renaming && (await act.run(() => window.butler.invoke('lists:rename', renaming)))) setRenaming(null)
+    if (renaming && (await act.run(() => window.butler.invoke('lists:rename', renaming)))) {
+      const { from, to } = renaming
+      setNewTaskList((current) => (current === from ? to.trim() : current)) // 选着的正是被改名的清单，表单跟着改
+      setRenaming(null)
+    }
   }
 
   return (
@@ -38,6 +47,8 @@ export default function Tasks() {
         <h2 id="new-task-title">新建任务</h2>
         <TaskForm
           lists={data.lists}
+          list={newTaskList}
+          onListChange={setNewTaskList}
           idPrefix="new"
           submitLabel="添加任务"
           busy={act.busy}

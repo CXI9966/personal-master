@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
+import { useEffect, useRef, type FormEvent, type KeyboardEvent } from 'react'
 import ActionCardView from '../components/ActionCardView'
 import type { ChatApi } from '../hooks/useChat'
 import { useSnapshot } from '../hooks/useSnapshot'
@@ -7,7 +7,7 @@ import { PLAN_PROMPT, REVIEW_PROMPT, useShell } from '../shellContext'
 export default function Chat({ chat }: { chat: ChatApi }) {
   const shell = useShell()
   const { data: status } = useSnapshot('ai:status')
-  const [draft, setDraft] = useState('')
+  const { draft, setDraft } = chat // 输入框的字存在上一层，切页面不会丢
   const log = useRef<HTMLDivElement>(null)
   const notConfigured = status !== null && !status.configured
 

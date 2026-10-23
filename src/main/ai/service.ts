@@ -15,6 +15,7 @@ import { ActionEngine } from './engine'
 import { createModel, normalizeBaseURL, testConnection } from './provider'
 import { runChat } from './runner'
 import { summarizeUsage } from './usage'
+import { writePetLine } from './petLine'
 import { commentOnWeek } from './weeklyComment'
 
 /** API key 在密钥存储里的名字 */
@@ -47,6 +48,8 @@ export interface AiService {
   commentWeek(weekStart: string): Promise<{ text: string }>
   persona(): Promise<{ markdown: string; sections: PersonaSections | null }>
   savePersona(markdown: string): Promise<void>
+  /** 桌宠台词：用管家人格写一句短话，不改任何数据。模型没配置好会抛错；调用量记在“桌宠台词”名下 */
+  petLine(facts: string, signal?: AbortSignal): Promise<string>
 }
 
 export interface AiServiceDeps {
@@ -55,6 +58,8 @@ export interface AiServiceDeps {
   platform: Platform
   encryptionAvailable: () => boolean
   newId?: () => string
+  /** 一次对话开始时调用（桌宠据此显示“在想”） */
+  onRunStart?: (runId: string) => void
 }
 
 export function createAiService(deps: AiServiceDeps): AiService {
@@ -114,6 +119,7 @@ export function createAiService(deps: AiServiceDeps): AiService {
       const runId = newId()
       const controller = new AbortController()
       runs.set(runId, controller)
+      deps.onRunStart?.(runId)
       const run: Promise<unknown> = runChat({
         ctx,
         engine: engineOf(ctx),
@@ -181,5 +187,13 @@ export function createAiService(deps: AiServiceDeps): AiService {
     },
 
     savePersona: (markdown) => savePersonaText(session.ctx(), markdown),
+
+    async petLine(facts, signal) {
+      const ctx = session.ctx()
+      const settings = await loadSettings(ctx.ws)
+      const model = createModel({ ...settings.provider, apiKey: (await secrets.get(KEY_NAME)) ?? '' }) // 没配置好会在这里报错
+      const persona = (await ctx.ws.readText(PATHS.persona)) ?? ''
+      return writePetLine({ ctx, model, provider: { kind: settings.provider.kind, model: settings.provider.model }, persona, facts, signal })
+    },
   }
 }

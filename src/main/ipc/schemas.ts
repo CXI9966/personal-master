@@ -63,6 +63,17 @@ export const schemas = {
     provider: z.object({ kind: ProviderKind, baseURL: z.string(), model: z.string() }),
     apiKey: z.string().optional(),
   }),
+  petSettings: z.object({
+    enabled: z.boolean(),
+    baseUrl: z.string(),
+    petId: z.string(),
+    status: z.boolean(),
+    menu: z.boolean(),
+    lines: z.boolean(),
+    linesUseModel: z.boolean(),
+    linesMinIntervalMin: z.number(),
+  }),
+  petTest: z.object({ baseUrl: z.string(), petId: z.string() }),
   aiSend: z.object({
     messages: z.array(z.object({ role: z.enum(['user', 'assistant']), text: z.string() })).min(1).max(100),
     scene: z.enum(['chat', 'plan', 'review', 'weekly']),

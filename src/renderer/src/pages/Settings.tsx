@@ -1,4 +1,5 @@
 import ModelForm from '../components/ModelForm'
+import PetSettings from '../components/PetSettings'
 import { ErrorNote } from '../components/Notices'
 import PersonaEditor from '../components/PersonaEditor'
 import ProfileForm from '../components/ProfileForm'
@@ -30,6 +31,7 @@ export default function Settings() {
 
       <SettingsGeneral settings={data.settings} act={act} />
       <SettingsReminders reminders={data.settings.reminders} autostart={data.autostart} act={act} />
+      <PetSettings act={act} />
       <ProfileForm profile={data.profile} act={act} />
 
       <section className="card" aria-labelledby="model-title">

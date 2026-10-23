@@ -12,6 +12,7 @@ import type {
   UsageSummary,
 } from './ai'
 import type { PersonaId, PersonaSections } from './persona'
+import type { PetSettings, PetTestResult } from './pet'
 import type { ActionMode, Checkin, ContextStrategy, Energy, ProfileFile, Task, TasksFile, TimelineItem } from './schema'
 import type {
   AppState,
@@ -104,6 +105,13 @@ export interface IpcMap {
   'persona:get': { req: void; res: { markdown: string; sections: PersonaSections | null } }
   'persona:save': { req: { markdown: string }; res: void }
   'persona:presets': { req: void; res: PersonaPresetInfo[] }
+  // ---- 桌宠 ----
+  /** 桌宠（dsh-pet）接入的设置，这台电脑的设置，不属于工作区 */
+  'pet:get': { req: void; res: PetSettings }
+  /** 保存并立即生效；地址不是本机、数值越界会被拒绝 */
+  'pet:save': { req: PetSettings; res: PetSettings }
+  /** 用给定的地址和宠物 id 试连一次，不保存 */
+  'pet:test': { req: { baseUrl: string; petId: string }; res: PetTestResult }
 }
 
 export type Channel = keyof IpcMap
@@ -157,6 +165,9 @@ const channelTable = {
   'persona:get': true,
   'persona:save': true,
   'persona:presets': true,
+  'pet:get': true,
+  'pet:save': true,
+  'pet:test': true,
 } as const satisfies Record<Channel, true>
 
 export const CHANNELS = Object.keys(channelTable) as Channel[]

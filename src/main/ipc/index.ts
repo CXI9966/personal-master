@@ -21,6 +21,7 @@ import { DomainError } from '../domain/errors'
 import { loadTasks } from '../domain/load'
 import { PERSONA_PRESETS } from '../init/personas'
 import { joinPersona } from '../../shared/persona'
+import type { PetControl } from '../pet/control'
 import { schemas as s } from './schemas'
 
 /** 每个通道一个处理函数；少一个、多一个都会编译报错 */
@@ -28,7 +29,7 @@ export type Handlers = { [C in Channel]: (request: Request<C>) => Promise<Respon
 
 const Id = z.string().min(1) // 这里的 Id 只要求非空：runId、卡片 id 不一定是 UUID
 
-export function createHandlers(session: Session, platform: Platform, ai: AiService): Handlers {
+export function createHandlers(session: Session, platform: Platform, ai: AiService, pet: PetControl): Handlers {
   const ctx = () => session.ctx()
   return {
     'app:state': () => session.state(),
@@ -95,5 +96,9 @@ export function createHandlers(session: Session, platform: Platform, ai: AiServi
     'persona:get': () => ai.persona(),
     'persona:save': ({ markdown }) => ai.savePersona(z.string().parse(markdown)),
     'persona:presets': async () => PERSONA_PRESETS.map((p) => ({ id: p.id, name: p.name, summary: p.summary, markdown: joinPersona(p.sections) })),
+
+    'pet:get': () => pet.get(),
+    'pet:save': (input) => pet.save(s.petSettings.parse(input)),
+    'pet:test': (input) => pet.test(s.petTest.parse(input)),
   }
 }

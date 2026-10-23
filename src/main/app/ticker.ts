@@ -39,7 +39,7 @@ export function createTicker(deps: TickerDeps): Ticker {
         if (due.length === 0) return
         // 先记账再弹：弹失败了也不会每分钟重复弹
         await deps.ledger.write({ date: today, sent: [...sent, ...due.map((reminder) => reminder.kind)] })
-        for (const reminder of due) deps.platform.showReminder({ title: reminder.title, body: reminder.body })
+        for (const reminder of due) deps.platform.showReminder({ title: reminder.title, body: reminder.body, kind: reminder.kind })
       } catch (error) {
         deps.onWarn?.(`定时检查失败：${String(error)}`)
       } finally {

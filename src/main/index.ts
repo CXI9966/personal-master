@@ -10,7 +10,11 @@ import { createSession } from './app/session'
 import { buildToday } from './app/snapshots'
 import { createTicker } from './app/ticker'
 import { buildTrayModel, performTrayAction } from './app/trayModel'
+import { checkPetSettings, normalizePetSettings } from '../shared/pet'
+import { DomainError } from './domain/errors'
 import { createHandlers } from './ipc'
+import { createPetBridge, type PetBridge } from './pet/bridge'
+import type { PetControl } from './pet/control'
 import { registerIpc } from './ipc/register'
 import { showNotification } from './shell/notify'
 import { createTray, type TrayController } from './shell/tray'
@@ -42,6 +46,7 @@ async function start(): Promise<void> {
   let tickTimer: ReturnType<typeof setInterval> | undefined
   let quitting = false
   let cleanedUp = false
+  let pet: PetBridge | null = null // 平台回调里要用到它，但它依赖后面才创建的管家服务，所以先声明
 
   const configStore = createFileConfigStore(app.getPath('userData'))
   const platform: Platform = {
@@ -56,11 +61,16 @@ async function start(): Promise<void> {
     notifyDataChanged(reason) {
       if (window && !window.isDestroyed()) window.webContents.send('data:changed', { reason })
       refreshTray()
+      pet?.onDataChanged()
     },
     notifyAi(event) {
       if (window && !window.isDestroyed()) window.webContents.send('ai:event', event)
+      pet?.onAiEvent(event)
     },
-    showReminder: (message) => showNotification(message, () => showWindow(window)),
+    showReminder(message) {
+      showNotification(message, () => showWindow(window))
+      if (message.kind) pet?.onReminder(message.kind)
+    },
     // 开机自启只对安装好的版本有意义；开发时（electron . 启动）不去动系统的启动项
     getAutostart: () =>
       app.isPackaged
@@ -77,8 +87,37 @@ async function start(): Promise<void> {
     encrypt: (plain) => safeStorage.encryptString(plain),
     decrypt: (data) => safeStorage.decryptString(data),
   })
-  const ai = createAiService({ session, secrets, platform, encryptionAvailable: () => safeStorage.isEncryptionAvailable() })
+  const ai = createAiService({
+    session,
+    secrets,
+    platform,
+    encryptionAvailable: () => safeStorage.isEncryptionAvailable(),
+    onRunStart: (runId) => pet?.onAiStart(runId),
+  })
   const ticker = createTicker({ session, platform, ledger: createFileLedger(app.getPath('userData')), onWarn: log })
+  pet = createPetBridge({
+    session,
+    buildToday,
+    modelReady: async () => (await ai.status()).configured,
+    writeLine: (facts, signal) => ai.petLine(facts, signal),
+    readPersona: async () => (await ai.persona()).markdown,
+    // 右键菜单和托盘是同一套：打卡、勾任务、打开主窗口
+    perform: (id) => performTrayAction(session.isOpen() ? session.ctx() : null, id),
+    openWindow: () => showWindow(window),
+    onWarn: log,
+  })
+  const petControl: PetControl = {
+    get: async () => (await configStore.read()).pet,
+    async save(next) {
+      const problem = checkPetSettings(next)
+      if (problem) throw new DomainError('invalid', problem)
+      const clean = normalizePetSettings(next)
+      await configStore.write({ pet: clean })
+      pet?.configure(clean)
+      return clean
+    },
+    test: async (input) => (pet ? pet.test(input) : { ok: false, message: '还没准备好，请稍后再试' }),
+  }
 
   async function updateTray(): Promise<void> {
     if (!tray) return
@@ -101,17 +140,18 @@ async function start(): Promise<void> {
     // 退出前先把还没渲染的视图渲染掉、关掉工作区，再真正退出
     event.preventDefault()
     cleanedUp = true
-    void session
-      .close()
-      .catch((error: unknown) => log(`关闭工作区失败：${String(error)}`))
-      .finally(() => app.quit())
+    void Promise.allSettled([
+      pet?.dispose(), // 清掉桌宠上的状态、菜单项和锁
+      session.close().catch((error: unknown) => log(`关闭工作区失败：${String(error)}`)),
+    ]).finally(() => app.quit())
   })
 
   await app.whenReady()
   app.setAppUserModelId('com.butler.app') // Windows 通知需要
   Menu.setApplicationMenu(null)
-  registerIpc(ipcMain, createHandlers(session, platform, ai), isTrustedSender)
+  registerIpc(ipcMain, createHandlers(session, platform, ai, petControl), isTrustedSender)
   await session.restore()
+  pet.configure((await configStore.read()).pet)
 
   const icon = nativeImage.createFromBuffer(makeIconPng(256))
   window = createMainWindow({ icon, isQuitting: () => quitting, startHidden: process.argv.includes(HIDDEN_FLAG) })

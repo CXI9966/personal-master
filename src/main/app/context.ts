@@ -1,10 +1,14 @@
 import type { AiEvent } from '../../shared/ai'
+import type { PetSettings } from '../../shared/pet'
 import type { AutostartInfo } from '../../shared/views'
 import type { Workspace } from '../store/types'
+import type { ReminderKind } from './reminders'
 
 export interface AppConfig {
   /** 上次打开的工作区；没有就是还没做过第一次运行 */
   workspaceRoot: string | null
+  /** 桌宠（dsh-pet）接入的设置，这台电脑的设置 */
+  pet: PetSettings
 }
 
 /**
@@ -16,12 +20,13 @@ export interface Platform {
   /** 第一次运行页面里默认填的工作区文件夹 */
   defaultRoot(): string
   readConfig(): Promise<AppConfig>
-  writeConfig(config: AppConfig): Promise<void>
+  /** 只改给出的字段 */
+  writeConfig(config: Partial<AppConfig>): Promise<void>
   notifyDataChanged(reason: 'local' | 'external'): void
   /** 管家对话的进展（文字、动作卡片、错误……）推给界面 */
   notifyAi(event: AiEvent): void
   /** 弹一条系统通知；点击通知会把窗口带到前面 */
-  showReminder(message: { title: string; body: string }): void
+  showReminder(message: { title: string; body: string; kind?: ReminderKind }): void
   /** 开机自启是这台电脑的设置，不放在工作区里 */
   getAutostart(): AutostartInfo
   setAutostart(enabled: boolean): void

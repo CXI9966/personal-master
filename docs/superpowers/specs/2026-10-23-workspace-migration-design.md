@@ -46,24 +46,19 @@
 ### 5.1 `src/main/app/migrate.ts`（新增，只依赖 Node）
 
 - `classifyTarget(currentRoot, target)`：返回 `same`、`inside`、`empty`（含不存在）、`workspace`、`occupied`、`file` 之一。比较路径前先 `resolve`，Windows 上忽略大小写。`inspect` 和 `migrate` 共用它，因为确认之前文件夹的状态可能变。
-- `copyManaged(from, to)`：
-  1. 记下目标原本是否存在，`mkdir -p`。
-  2. 对 `MANAGED_ENTRIES` 里源文件夹实际存在的条目逐个 `cp`（递归，不覆盖）。
-  3. 校验：两边相对路径集合一致、每个文件大小一致，否则抛错。
-  4. 返回 `{ files, bytes, skipped }`，`skipped` 是源文件夹里不属于清单的顶层条目。
-  任何一步抛错，先回退再重新抛出：只删本次新建的条目；目标是本次新建的，且回退后为空，才删目标文件夹。
+- `createCopyJob(from, to)`：先检查新位置里没有 Butler 的条目（有就拒绝），并算出目标路径上要新建的几层文件夹；这一步不改动任何东西。返回的对象有两个方法：`run()` 把 `MANAGED_ENTRIES` 里源文件夹实际存在的条目递归复制过去（不覆盖），再校验两边的相对路径集合和每个文件的大小，不一致就抛错；`undo()` 只删本次复制出来的条目和本次新建的空文件夹，清不掉就返回没删掉的路径。回退由 `Session` 统一调用，所以复制失败和后面“打开新位置”失败走同一条路径。
 
 ### 5.2 `src/main/app/session.ts`
 
 - `migrate(root)`：
   1. 前置检查：已打开工作区、没有别的迁移在进行、`classifyTarget` 为 `empty`，否则抛 `DomainError`。
-  2. 记下旧路径，`close()`（写完待渲染的视图、停掉文件监听），进入迁移状态。
-  3. `copyManaged`，再 `openAt(目标, null)`（会校验已初始化并写入 `config.json`）。
-  4. 任何一步失败：回退目标、`close()`、`openAt(旧路径, null)`，再抛出原错误。
+  2. `createCopyJob` 检查新位置（不改动任何东西），然后进入迁移状态，记下旧路径，`close()`（写完待渲染的视图、停掉文件监听）。
+  3. `job.run()` 复制并校验，再 `openAt(目标, null)`（会校验已初始化并写入 `config.json`）。
+  4. 任何一步失败：`close()`、`job.undo()`、`openAt(旧路径, null)`，再抛出带原因的错误；旧路径也打不开就在错误里说明并建议重启程序。
   5. 结束后退出迁移状态，`platform.notifyDataChanged('local')`。
 - 迁移状态下 `ctx()` 抛“正在迁移工作区，请稍等”，不用“还没有选择工作区”误导。`isOpen()` 为 false，定时检查自动跳过。
-- `open(root)`：成功后如果之前已经打开过别的工作区，同样发 `notifyDataChanged('local')`；选的是当前工作区时什么都不做。
-- `inspect(root)`：结果新增 `empty`（文件夹不存在，或存在但没有任何条目）和 `blocked`（`same`、`inside` 时的原因，否则 `null`）。界面按 `blocked`、`initialized`、`empty` 的顺序判断显示哪种提示。
+- `open(root)`：已经打开了别的工作区时，成功后同样发 `notifyDataChanged('local')`，失败则回到原来的工作区；选的是当前工作区时什么都不做。
+- `inspect(root)`：结果新增 `blocked`，是这个文件夹既不能迁移进去、也不能切换过去的原因（当前工作区本身或其内部、是文件、非空且不是 Butler 工作区），可以用就是 `null`。界面先看 `blocked`（显示原因），再看 `initialized`（切换），否则就是空文件夹或还不存在（迁移）。
 
 ### 5.3 IPC 与管家
 

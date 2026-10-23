@@ -1,4 +1,4 @@
-import { useRef, type KeyboardEvent } from 'react'
+import { useRef, type CSSProperties, type KeyboardEvent } from 'react'
 import { weekdayName } from '../../../shared/calendar'
 import type { HeatCell } from '../../../shared/views'
 
@@ -49,6 +49,7 @@ export default function Heatmap({ cells, label, selected, onSelect }: Props) {
               aria-label={cellLabel(cell)}
               aria-pressed={selected === cell.date}
               aria-disabled={cell.future || undefined}
+              style={{ '--c': Math.floor(index / 7) } as CSSProperties}
               tabIndex={index === tabStop ? 0 : -1}
               title={cellLabel(cell)}
               onClick={() => !cell.future && onSelect(cell.date)}

@@ -1,0 +1,226 @@
+/* 手账风格：纸感底色加点点格、硬投影、荧光笔标题、楷体大字。颜色变量在 app.css 里，这里只管形状和动效 */
+body {
+  background-color: var(--bg);
+  background-image: radial-gradient(color-mix(in srgb, var(--text) 9%, transparent) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+h1,
+h2,
+.brand,
+.tile-value {
+  font-family: var(--display);
+}
+
+h1 {
+  font-size: 1.9rem;
+  letter-spacing: 1px;
+}
+
+/* 标题底下像荧光笔划过一样刷出一道底色 */
+h1,
+h2 {
+  display: inline-block;
+  background: linear-gradient(transparent 62%, color-mix(in srgb, var(--accent) 24%, transparent) 62%) no-repeat;
+  background-size: 0% 100%;
+  animation: marker 0.7s 0.15s ease-out forwards;
+}
+
+.card-header h2 {
+  display: inline-block;
+}
+
+@keyframes marker {
+  to { background-size: 100% 100%; }
+}
+
+/* ---------- 导航 ---------- */
+.nav {
+  border-right: 2px dashed var(--border);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.4rem;
+}
+
+.brand::before {
+  content: '';
+  width: 26px;
+  height: 26px;
+  border-radius: 50% 50% 50% 8px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  box-shadow: 2px 2px 0 var(--shadow-c);
+}
+
+.nav button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+  box-shadow: none;
+  transition: background 0.2s, color 0.2s, transform 0.2s;
+}
+
+.nav button:hover {
+  color: var(--text);
+  transform: translateX(3px);
+}
+
+.nav button[aria-current='page'] {
+  background: var(--accent);
+  color: var(--accent-text);
+  box-shadow: 2px 3px 0 var(--shadow-c);
+  transform: none;
+}
+
+.nav-icon {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ---------- 卡片、按钮 ---------- */
+.card {
+  border-radius: 12px;
+  box-shadow: 2px 3px 0 var(--shadow-c);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+  transform: translate(-1px, -2px);
+  box-shadow: 3px 5px 0 var(--shadow-c);
+}
+
+.banner {
+  border-radius: 10px;
+  box-shadow: 2px 2px 0 var(--shadow-c);
+}
+
+button {
+  border-radius: 10px;
+  box-shadow: 1px 2px 0 var(--shadow-c);
+  transition: transform 0.12s, box-shadow 0.12s, background 0.2s;
+}
+
+button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
+button[aria-pressed='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+/* ---------- 页面切换：整页淡入，里面的卡片依次升上来 ---------- */
+.page {
+  animation: page-in 0.3s ease-out;
+}
+
+/* 每个页面组件外面有一层根元素，卡片是它的子元素；h1 自己有荧光笔动画，不参与 */
+.page > * > :not(h1) {
+  animation: rise 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+.page > * > :nth-child(3) { animation-delay: 0.05s; }
+.page > * > :nth-child(4) { animation-delay: 0.1s; }
+.page > * > :nth-child(5) { animation-delay: 0.15s; }
+.page > * > :nth-child(6) { animation-delay: 0.2s; }
+.page > * > :nth-child(n + 7) { animation-delay: 0.25s; }
+
+@keyframes page-in {
+  from { opacity: 0; }
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(12px); }
+}
+
+/* ---------- 任务勾选框：勾上时弹一下，对勾画出来 ---------- */
+.task-check input[type='checkbox'] {
+  appearance: none;
+  display: inline-grid;
+  place-content: center;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  border: 2px solid var(--border);
+  border-radius: 7px;
+  background: var(--panel);
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.task-check input[type='checkbox']::after {
+  content: '';
+  width: 10px;
+  height: 5px;
+  margin-top: -2px;
+  border-left: 3px solid var(--accent-text);
+  border-bottom: 3px solid var(--accent-text);
+  transform: rotate(-45deg) scale(0);
+  transition: transform 0.2s 0.05s;
+}
+
+.task-check input[type='checkbox']:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+  animation: pop 0.3s;
+}
+
+.task-check input[type='checkbox']:checked::after {
+  transform: rotate(-45deg) scale(1);
+}
+
+.task-title {
+  transition: color 0.25s;
+}
+
+@keyframes pop {
+  50% { transform: scale(1.25); }
+}
+
+/* ---------- 热力图：一列一列依次浮现，鼠标放上去放大 ---------- */
+.heatmap .heat {
+  border-radius: 4px;
+  animation: cell-in 0.4s backwards;
+  animation-delay: calc(var(--c, 0) * 18ms);
+  transition: transform 0.12s;
+}
+
+.heatmap .heat:hover:not(.future) {
+  transform: scale(1.35);
+}
+
+@keyframes cell-in {
+  from { opacity: 0; transform: scale(0.3); }
+}
+
+/* ---------- 减少动画：系统设置里开了就全部关掉 ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  h1,
+  h2 {
+    background-size: 100% 100%;
+  }
+}

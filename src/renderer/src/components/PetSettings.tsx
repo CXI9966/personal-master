@@ -138,11 +138,16 @@ export default function PetSettings({ act }: { act: Action }) {
         <p className="hint">Butler 只负责启动，不负责下载桌宠。桌宠要你先自己装好，启动文件指到它就行。</p>
         {launchStatus && (
           <p role="status" className={launchStatus.state === 'failed' || launchStatus.state === 'missing' ? 'error' : 'hint'}>
+            <span
+              className={`light ${launchStatus.state === 'started' || launchStatus.state === 'external' ? 'ok' : launchStatus.state === 'failed' || launchStatus.state === 'missing' ? 'bad' : ''}`}
+              aria-hidden="true"
+            />
             桌宠：{launchStatus.message}
           </p>
         )}
         {result && (
           <p role="status" className={result.ok ? 'hint' : 'error'}>
+            <span className={result.ok ? 'light ok' : 'light bad'} aria-hidden="true" />
             {result.message}
           </p>
         )}

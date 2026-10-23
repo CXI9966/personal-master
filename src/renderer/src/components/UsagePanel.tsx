@@ -2,6 +2,7 @@ import { weekdayName } from '../../../shared/calendar'
 import { FEATURE_NAMES, FEATURES } from '../../../shared/usageText'
 import { useSnapshot } from '../hooks/useSnapshot'
 import { ErrorNote } from './Notices'
+import BarChart from './viz/BarChart'
 
 const n = (value: number): string => value.toLocaleString('zh-CN')
 
@@ -19,6 +20,11 @@ export default function UsagePanel() {
         本周（{data.weekStart} ~ {data.weekEnd}）调用 {data.total.calls} 次，输入 {n(data.total.inputTokens)} token，输出 {n(data.total.outputTokens)} token。
       </p>
       {data.callsWithoutTokens > 0 && <p className="hint">有 {data.callsWithoutTokens} 次调用接口没有返回 token 数，只算了次数。</p>}
+      <BarChart
+        label="本周每天调用管家的次数"
+        unit=" 次"
+        items={data.byDay.map((day) => ({ label: weekdayName(day.date), value: day.calls, hint: `${day.date} ${weekdayName(day.date)}：调用 ${day.calls} 次` }))}
+      />
       <table>
         <caption className="sr-only">本周管家用量，按功能</caption>
         <thead>

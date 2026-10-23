@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { HealthBanner, UndoBar } from './components/Notices'
+import NavIcon from './components/viz/NavIcon'
 import { useChat } from './hooks/useChat'
 import Chat from './pages/Chat'
 import Records from './pages/Records'
@@ -38,6 +39,7 @@ export default function Shell() {
           <p className="brand">Butler</p>
           {PAGES.map(([id, label]) => (
             <button key={id} type="button" aria-current={page === id ? 'page' : undefined} onClick={() => setPage(id)}>
+              <NavIcon name={id} />
               {label}
             </button>
           ))}
@@ -45,11 +47,13 @@ export default function Shell() {
         <div className="content">
           <HealthBanner />
           <main>
-            {page === 'today' && <Today />}
-            {page === 'chat' && <Chat chat={chat} />}
-            {page === 'tasks' && <Tasks />}
-            {page === 'records' && <Records />}
-            {page === 'settings' && <Settings />}
+            <div className="page" key={page}>
+              {page === 'today' && <Today />}
+              {page === 'chat' && <Chat chat={chat} />}
+              {page === 'tasks' && <Tasks />}
+              {page === 'records' && <Records />}
+              {page === 'settings' && <Settings />}
+            </div>
           </main>
           <UndoBar />
         </div>

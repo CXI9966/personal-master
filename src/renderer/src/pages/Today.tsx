@@ -8,6 +8,11 @@ import { ErrorNote, Warnings } from '../components/Notices'
 import ReviewForm from '../components/ReviewForm'
 import TimelineEditor from '../components/TimelineEditor'
 import TodayTasks from '../components/TodayTasks'
+import CountUp from '../components/viz/CountUp'
+import DayBar from '../components/viz/DayBar'
+import Ring from '../components/viz/Ring'
+import StatTile from '../components/viz/StatTile'
+import { lastSevenDays, previousSevenTotal, streak, sumScores } from '../components/viz/stats'
 import { useAction } from '../hooks/useAction'
 import { useSnapshot } from '../hooks/useSnapshot'
 import { PLAN_PROMPT, REVIEW_PROMPT, useShell } from '../shellContext'
@@ -20,11 +25,16 @@ export default function Today() {
   const shell = useShell()
   const [selected, setSelected] = useState<string | null>(null)
   const [weight, setWeight] = useState('')
+  const [flash, setFlash] = useState<'wake' | 'sleep' | null>(null) // 打卡成功后按钮闪一下
 
   if (error) return <ErrorNote message={error} />
   if (!data) return <p className="hint">加载中…</p>
 
-  const checkin = (type: 'wake' | 'sleep') => act.run(() => window.butler.invoke('checkin:add', { type }))
+  async function checkin(type: 'wake' | 'sleep'): Promise<void> {
+    if (!(await act.run(() => window.butler.invoke('checkin:add', { type })))) return
+    setFlash(type)
+    setTimeout(() => setFlash(null), 900)
+  }
 
   async function addWeight(event: FormEvent): Promise<void> {
     event.preventDefault()
@@ -35,6 +45,13 @@ export default function Today() {
     data.wake && `起床 ${clockOf(data.wake.at)}（${SOURCE_LABELS[data.wake.source]}）`,
     data.sleep && `睡前 ${clockOf(data.sleep.at)}（${SOURCE_LABELS[data.sleep.source]}）`,
   ].filter(Boolean)
+
+  const done = data.planTasks.filter((task) => task.status === 'done').length
+  const planned = data.planTasks.length
+  const total = sumScores(lastSevenDays(data.heatmap))
+  const diff = total - previousSevenTotal(data.heatmap)
+  const now = new Date()
+  const nowMinutes = now.getHours() * 60 + now.getMinutes()
 
   return (
     <div>
@@ -51,13 +68,36 @@ export default function Today() {
         </section>
       )}
 
+      <div className="tiles">
+        <StatTile
+          label="今天的任务"
+          note={planned === 0 ? '还没有排任务' : `排了 ${planned} 个，完成 ${done} 个`}
+          aside={<Ring value={done} total={planned} label={`今天排了 ${planned} 个任务，完成 ${done} 个`} />}
+        >
+          <CountUp to={done} />/{planned}
+        </StatTile>
+        <StatTile label="连续记录" note="每天有记录就算一天">
+          <CountUp to={streak(data.heatmap)} /> 天
+        </StatTile>
+        <StatTile
+          label="最近 7 天得分"
+          note={
+            <span className={diff >= 0 ? 'delta up' : 'delta down'}>
+              {diff >= 0 ? '比前 7 天多' : '比前 7 天少'} {Math.abs(diff)} 分
+            </span>
+          }
+        >
+          <CountUp to={total} />
+        </StatTile>
+      </div>
+
       <section className="card" aria-labelledby="checkin-title">
         <h2 id="checkin-title">打卡</h2>
         <div className="row">
-          <button type="button" className="primary" disabled={act.busy} onClick={() => checkin('wake')}>
+          <button type="button" className={flash === 'wake' ? 'primary pulse' : 'primary'} disabled={act.busy} onClick={() => checkin('wake')}>
             起床打卡
           </button>
-          <button type="button" disabled={act.busy} onClick={() => checkin('sleep')}>
+          <button type="button" className={flash === 'sleep' ? 'pulse' : undefined} disabled={act.busy} onClick={() => checkin('sleep')}>
             睡前打卡
           </button>
         </div>
@@ -101,6 +141,7 @@ export default function Today() {
             让管家排
           </button>
         </header>
+        <DayBar items={data.plan.timeline} nowMinutes={nowMinutes} />
         <TimelineEditor
           items={data.plan.timeline}
           fixed={data.fixedToday}

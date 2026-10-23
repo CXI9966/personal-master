@@ -70,6 +70,10 @@ h2 {
   margin: 0;
 }
 
+.path {
+  overflow-wrap: anywhere;
+}
+
 .error {
   color: var(--danger);
   margin: 1rem 0 0;

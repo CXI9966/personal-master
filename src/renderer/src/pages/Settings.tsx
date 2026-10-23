@@ -5,6 +5,7 @@ import ProfileForm from '../components/ProfileForm'
 import SettingsGeneral from '../components/SettingsGeneral'
 import SettingsReminders from '../components/SettingsReminders'
 import UsagePanel from '../components/UsagePanel'
+import WorkspaceMove from '../components/WorkspaceMove'
 import { useAction } from '../hooks/useAction'
 import { useSnapshot } from '../hooks/useSnapshot'
 
@@ -22,8 +23,9 @@ export default function Settings() {
 
       <section className="card" aria-labelledby="workspace-title">
         <h2 id="workspace-title">工作区</h2>
-        <p>{data.workspaceRoot}</p>
+        <p className="path">{data.workspaceRoot}</p>
         <p className="hint">所有数据都在这个文件夹里。data 文件夹是程序读写的原始数据，其余 .md 是自动生成给你看的。</p>
+        <WorkspaceMove root={data.workspaceRoot} act={act} />
       </section>
 
       <SettingsGeneral settings={data.settings} act={act} />

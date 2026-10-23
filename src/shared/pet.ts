@@ -93,7 +93,7 @@ export function checkPetSettings(input: PetSettings): string | null {
   }
   const launcher = input.launcher.trim()
   if (launcher !== '') {
-    if (!/^[A-Za-z]:[\\/]/.test(launcher)) return '启动文件要写完整的路径，比如 D:\\dev\\dsh-pet\\start-pet.bat'
+    if (!/^[A-Za-z]:[\\/]/.test(launcher)) return '启动文件要写完整的路径，比如 C:\\tools\\dsh-pet\\start-pet.bat'
     if (!/\.(bat|cmd|exe)$/i.test(launcher)) return '启动文件只支持 .bat、.cmd 或 .exe'
     if (/[<>|*?"%&^]/.test(launcher)) return '启动文件的路径里有不能用的字符（< > | * ? " % & ^）'
   }

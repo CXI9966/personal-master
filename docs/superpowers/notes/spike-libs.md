@@ -13,12 +13,12 @@
 | 时区 / 代码页 | Asia/Shanghai（+08:00）/ 系统 ANSI 代码页 936（gb2312） |
 | 包（全部精确版本） | chokidar 5.0.0（带出 readdirp 5.1.1）、date-fns 4.4.0、zod 4.6.5、typescript 6.0.3、@types/node 24.19.1（带出 undici-types 7.24.6） |
 | 额外的包 | 没有 |
-| 临时目录（已保留） | `C:\Users\ASUS\AppData\Local\Temp\butler-spike-libs` |
+| 临时目录 | 系统临时目录下的 `butler-spike-libs` |
 
 安装（npm 全局配置的源是 https://registry.npmmirror.com/，lock 文件里的 resolved 都来自这里）：
 
 ```bash
-cd /c/Users/ASUS/AppData/Local/Temp/butler-spike-libs
+cd "$TEMP/butler-spike-libs"
 npm init -y
 npm install --ignore-scripts --save-exact chokidar@5.0.0 date-fns@4.4.0 zod@4.6.5 typescript@6.0.3 @types/node@24.19.1
 ```
@@ -26,7 +26,7 @@ npm install --ignore-scripts --save-exact chokidar@5.0.0 date-fns@4.4.0 zod@4.6.
 Node 24 能直接运行 `.mts`（类型擦除，不用加参数，也没有警告）。所有脚本先过类型检查，再运行：
 
 ```bash
-cd /c/Users/ASUS/AppData/Local/Temp/butler-spike-libs/spikes
+cd "$TEMP/butler-spike-libs/spikes"
 ../node_modules/.bin/tsc -p tsconfig.json   # strict、nodenext、skipLibCheck: false，全部通过
 node zod-spike.mts > ../results/zod.json
 ```

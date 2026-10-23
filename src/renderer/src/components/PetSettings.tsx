@@ -121,7 +121,7 @@ export default function PetSettings({ act }: { act: Action }) {
             id="pet-launcher"
             type="text"
             spellCheck={false}
-            placeholder="比如 D:\dev\dsh-pet\start-pet.bat"
+            placeholder="比如 C:\tools\dsh-pet\start-pet.bat"
             value={form.launcher}
             onChange={(e) => change('launcher', e.target.value)}
           />

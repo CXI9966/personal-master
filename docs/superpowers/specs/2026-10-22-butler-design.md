@@ -2,7 +2,7 @@
 
 - 日期：2026-10-22
 - 状态：已确认（用户逐项选择确认）
-- 代码仓库：D:\dev\butler-app
+- 代码仓库：https://github.com/CXI9966/personal-master
 - 范围：v1 桌面端；v2 手机打卡与同步（本文先把接口定下来）
 
 ## 1. 背景

@@ -18,7 +18,9 @@ import type {
   AutostartInfo,
   ChangeInfo,
   DaySnapshot,
+  FolderInfo,
   HealthProblem,
+  MigrationResult,
   NewTaskInput,
   RecordsSnapshot,
   SettingsPatch,
@@ -32,11 +34,13 @@ export interface IpcMap {
   'app:state': { req: void; res: AppState }
   /** 弹出系统的选择文件夹对话框，取消返回 null */
   'workspace:pick': { req: void; res: string | null }
-  'workspace:inspect': { req: { root: string }; res: { exists: boolean; initialized: boolean } }
+  'workspace:inspect': { req: { root: string }; res: FolderInfo }
   /** 第一次运行：初始化并打开工作区 */
   'workspace:init': { req: { root: string; persona: PersonaId }; res: AppState }
   /** 打开一个已经初始化过的工作区 */
   'workspace:open': { req: { root: string }; res: AppState }
+  /** 把工作区迁移到空文件夹：复制、检查、切换。失败时回到原工作区；旧文件夹原样保留 */
+  'workspace:migrate': { req: { root: string }; res: MigrationResult }
   'today:get': { req: void; res: TodaySnapshot }
   'day:get': { req: { date: string }; res: DaySnapshot }
   'checkin:add': { req: { type: Checkin['type'] }; res: void }
@@ -113,6 +117,7 @@ const channelTable = {
   'workspace:inspect': true,
   'workspace:init': true,
   'workspace:open': true,
+  'workspace:migrate': true,
   'today:get': true,
   'day:get': true,
   'checkin:add': true,

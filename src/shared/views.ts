@@ -37,6 +37,21 @@ export interface AppState {
   defaultRoot: string
 }
 
+/** 某个文件夹能不能当工作区用（设置页判断该迁移、切换还是拒绝） */
+export interface FolderInfo {
+  exists: boolean
+  /** 里面已经有 Butler 工作区（有 data/settings.json） */
+  initialized: boolean
+  /** 既不能迁移进去、也不能切换过去的原因；可以用就是 null */
+  blocked: string | null
+}
+
+export interface MigrationResult {
+  workspaceRoot: string
+  /** 旧文件夹里不属于 Butler、没有搬的顶层条目 */
+  skipped: string[]
+}
+
 export interface NewTaskInput {
   title: string
   list?: string

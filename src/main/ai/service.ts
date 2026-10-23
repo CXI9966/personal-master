@@ -36,6 +36,8 @@ export interface AiService {
   /** 开始一次对话，马上返回 runId；进展通过 platform.notifyAi 推给界面 */
   send(input: { messages: ChatMessage[]; scene: AiScene }): Promise<{ runId: string }>
   cancel(runId: string): void
+  /** 中止所有进行中的对话，最多等 3 秒让它们收尾（换工作区之前用） */
+  abortAll(): Promise<void>
   /** 用户对一张待确认的卡片点了确认或取消 */
   confirm(cardId: string, accept: boolean): Promise<ActionCard>
   /** 新对话：清掉还没确认的卡片 */
@@ -59,6 +61,7 @@ export function createAiService(deps: AiServiceDeps): AiService {
   const { session, secrets, platform } = deps
   const newId = deps.newId ?? (() => randomUUID())
   const runs = new Map<string, AbortController>()
+  const pending = new Set<Promise<unknown>>()
   let engineFor: { ctx: AppContext; engine: ActionEngine } | null = null
 
   /** 每个工作区一个引擎；换了工作区，旧的待确认卡片作废 */
@@ -111,7 +114,7 @@ export function createAiService(deps: AiServiceDeps): AiService {
       const runId = newId()
       const controller = new AbortController()
       runs.set(runId, controller)
-      void runChat({
+      const run: Promise<unknown> = runChat({
         ctx,
         engine: engineOf(ctx),
         model,
@@ -126,13 +129,26 @@ export function createAiService(deps: AiServiceDeps): AiService {
         emit: (event) => platform.notifyAi(event),
       }).finally(() => {
         runs.delete(runId)
+        pending.delete(run)
         platform.notifyDataChanged('local') // 用量记了一笔，设置页的本周用量要刷新
       })
+      pending.add(run)
       return { runId }
     },
 
     cancel(runId) {
       runs.get(runId)?.abort()
+    },
+
+    async abortAll() {
+      for (const controller of runs.values()) controller.abort()
+      if (pending.size === 0) return
+      let timer: ReturnType<typeof setTimeout> | undefined
+      const timeout = new Promise<void>((resolve) => {
+        timer = setTimeout(resolve, 3000) // 不让迁移卡在一个停不下来的对话上
+      })
+      await Promise.race([Promise.allSettled([...pending]), timeout])
+      clearTimeout(timer)
     },
 
     confirm: (cardId, accept) => engineOf(session.ctx()).confirm(cardId, accept),

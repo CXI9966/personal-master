@@ -15,3 +15,9 @@ export const PATHS = {
 } as const
 
 export const planPath = (date: string): string => `${PATHS.plansDir}/${date}.json`
+
+/**
+ * Butler 自己管的顶层条目（相对工作区）。迁移时只搬这些，其余文件一概不碰。
+ * 生成的视图名字以 src/main/render 实际生成的为准。
+ */
+export const MANAGED_ENTRIES = ['data', PATHS.persona, PATHS.schedule, '今日.md', '本周.md', '我的设定.md', '任务库', '记录', '归档'] as const

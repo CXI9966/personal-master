@@ -35,7 +35,16 @@ export function createHandlers(session: Session, platform: Platform, ai: AiServi
     'workspace:pick': () => platform.pickFolder(),
     'workspace:inspect': ({ root }) => session.inspect(s.folder.parse(root)),
     'workspace:init': ({ root, persona }) => session.initialize(s.folder.parse(root), s.persona.parse(persona)),
-    'workspace:open': ({ root }) => session.open(s.folder.parse(root)),
+    'workspace:open': async ({ root }) => {
+      const folder = s.folder.parse(root)
+      if (session.isOpen()) await ai.abortAll() // 换工作区之前先中止进行中的管家对话
+      return session.open(folder)
+    },
+    'workspace:migrate': async ({ root }) => {
+      const folder = s.folder.parse(root)
+      await ai.abortAll()
+      return session.migrate(folder)
+    },
 
     'today:get': () => buildToday(ctx()),
     'day:get': ({ date }) => buildDay(ctx(), s.date.parse(date)),

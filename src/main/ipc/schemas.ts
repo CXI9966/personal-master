@@ -72,6 +72,8 @@ export const schemas = {
     lines: z.boolean(),
     linesUseModel: z.boolean(),
     linesMinIntervalMin: z.number(),
+    autoStart: z.boolean(),
+    launcher: z.string(),
   }),
   petTest: z.object({ baseUrl: z.string(), petId: z.string() }),
   aiSend: z.object({

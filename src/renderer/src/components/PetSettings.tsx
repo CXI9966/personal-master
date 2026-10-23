@@ -1,15 +1,35 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { DEFAULT_PET_SETTINGS, type PetSettings as Settings, type PetTestResult } from '../../../shared/pet'
+import { DEFAULT_PET_SETTINGS, type PetLaunchStatus, type PetSettings as Settings, type PetTestResult } from '../../../shared/pet'
 import type { Action } from '../hooks/useAction'
 import { useSnapshot } from '../hooks/useSnapshot'
 
 /** 桌宠（dsh-pet）接入：开关、地址、宠物 id、几个子开关、试连。这台电脑的设置，不在工作区里 */
 export default function PetSettings({ act }: { act: Action }) {
-  const { data } = useSnapshot('pet:get')
+  const { data, reload } = useSnapshot('pet:get')
   const [form, setForm] = useState<Settings>(DEFAULT_PET_SETTINGS)
   const [loaded, setLoaded] = useState(false)
   const [result, setResult] = useState<PetTestResult | null>(null)
   const [saved, setSaved] = useState(false)
+  const [launchStatus, setLaunchStatus] = useState<PetLaunchStatus | null>(null)
+
+  // 桌宠的启动进展由主进程维护，这里隔几秒问一次
+  useEffect(() => {
+    let alive = true
+    const tick = (): void => {
+      window.butler.invoke('pet:status').then(
+        (status) => alive && setLaunchStatus(status),
+        () => undefined,
+      )
+    }
+    tick()
+    const timer = setInterval(tick, 2000)
+    return () => {
+      alive = false
+      clearInterval(timer)
+    }
+  }, [])
+
+  const launch = (): Promise<boolean> => act.run(async () => setLaunchStatus(await window.butler.invoke('pet:launch')))
 
   useEffect(() => {
     if (data && !loaded) {
@@ -28,6 +48,7 @@ export default function PetSettings({ act }: { act: Action }) {
     event.preventDefault()
     return act.run(async () => {
       setForm(await window.butler.invoke('pet:save', form))
+      reload() // 已保存的值变了，“现在启动”这类要和它比对的按钮才会跟着更新
       setResult(null)
       setSaved(true)
     })
@@ -94,6 +115,32 @@ export default function PetSettings({ act }: { act: Action }) {
           />
         </div>
         <p className="hint">间隔内发生的事用内置的话回应，另外每小时最多让模型写 6 次。</p>
+        <div className="field">
+          <label htmlFor="pet-launcher">桌宠的启动文件（完整路径，.bat、.cmd 或 .exe）</label>
+          <input
+            id="pet-launcher"
+            type="text"
+            spellCheck={false}
+            placeholder="比如 D:\dev\dsh-pet\start-pet.bat"
+            value={form.launcher}
+            onChange={(e) => change('launcher', e.target.value)}
+          />
+        </div>
+        <label className="day-check">
+          <input
+            type="checkbox"
+            disabled={off || form.launcher.trim() === ''}
+            checked={form.autoStart}
+            onChange={(e) => change('autoStart', e.target.checked)}
+          />
+          打开 Butler 时，桌宠没在运行就用这个文件启动它（Butler 退出时只关它自己启动的那个）
+        </label>
+        <p className="hint">Butler 只负责启动，不负责下载桌宠。桌宠要你先自己装好，启动文件指到它就行。</p>
+        {launchStatus && (
+          <p role="status" className={launchStatus.state === 'failed' || launchStatus.state === 'missing' ? 'error' : 'hint'}>
+            桌宠：{launchStatus.message}
+          </p>
+        )}
         {result && (
           <p role="status" className={result.ok ? 'hint' : 'error'}>
             {result.message}
@@ -105,6 +152,14 @@ export default function PetSettings({ act }: { act: Action }) {
           </p>
         )}
         <div className="actions">
+          <button
+            type="button"
+            disabled={act.busy || form.launcher.trim() === '' || form.launcher.trim() !== (data?.launcher ?? '')}
+            title="按已保存的启动文件启动；刚改过的话先保存"
+            onClick={launch}
+          >
+            现在启动桌宠
+          </button>
           <button type="button" disabled={act.busy} onClick={test}>
             测试连接
           </button>

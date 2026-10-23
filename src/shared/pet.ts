@@ -15,6 +15,16 @@ export interface PetSettings {
   linesUseModel: boolean
   /** 模型台词的最短间隔，单位分钟 */
   linesMinIntervalMin: number
+  /** 打开 Butler 时，如果桌宠没在运行，就用下面的启动文件把它启动起来 */
+  autoStart: boolean
+  /** 桌宠的启动文件（.bat、.cmd 或 .exe），要写完整的路径。自动启动和“现在启动”才会用到 */
+  launcher: string
+}
+
+/** 桌宠有没有在运行、是不是 Butler 启动的 */
+export interface PetLaunchStatus {
+  state: 'off' | 'external' | 'starting' | 'started' | 'missing' | 'failed' | 'stopped'
+  message: string
 }
 
 export const DEFAULT_PET_SETTINGS: PetSettings = {
@@ -26,6 +36,8 @@ export const DEFAULT_PET_SETTINGS: PetSettings = {
   lines: true,
   linesUseModel: true,
   linesMinIntervalMin: 10,
+  autoStart: false,
+  launcher: '',
 }
 
 export interface PetTestResult {
@@ -65,6 +77,8 @@ export function parsePetSettings(raw: unknown): PetSettings {
     lines: bool('lines', d.lines),
     linesUseModel: bool('linesUseModel', d.linesUseModel),
     linesMinIntervalMin: typeof interval === 'number' && Number.isFinite(interval) && interval >= 1 && interval <= 240 ? Math.round(interval) : d.linesMinIntervalMin,
+    autoStart: bool('autoStart', d.autoStart),
+    launcher: text('launcher', d.launcher),
   }
 }
 
@@ -77,10 +91,16 @@ export function checkPetSettings(input: PetSettings): string | null {
   if (!Number.isInteger(input.linesMinIntervalMin) || input.linesMinIntervalMin < 1 || input.linesMinIntervalMin > 240) {
     return '模型台词的最短间隔要在 1 到 240 分钟之间'
   }
+  const launcher = input.launcher.trim()
+  if (launcher !== '') {
+    if (!/^[A-Za-z]:[\\/]/.test(launcher)) return '启动文件要写完整的路径，比如 D:\\dev\\dsh-pet\\start-pet.bat'
+    if (!/\.(bat|cmd|exe)$/i.test(launcher)) return '启动文件只支持 .bat、.cmd 或 .exe'
+    if (/[<>|*?"%&^]/.test(launcher)) return '启动文件的路径里有不能用的字符（< > | * ? " % & ^）'
+  }
   return null
 }
 
 /** 去掉首尾空白和地址末尾的斜杠 */
 export function normalizePetSettings(input: PetSettings): PetSettings {
-  return { ...input, baseUrl: input.baseUrl.trim().replace(/\/+$/, ''), petId: input.petId.trim() }
+  return { ...input, baseUrl: input.baseUrl.trim().replace(/\/+$/, ''), petId: input.petId.trim(), launcher: input.launcher.trim() }
 }

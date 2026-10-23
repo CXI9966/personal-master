@@ -42,6 +42,8 @@ export interface PetBridge {
   onAiStart(runId: string): void
   onAiEvent(event: AiEvent): void
   test(input: { baseUrl: string; petId: string }): Promise<PetTestResult>
+  /** 刚把桌宠启动起来：马上探一次，不用等每 30 秒一次的探活 */
+  reconnect(): void
   /** 退出前清掉自己写的状态、菜单项和锁 */
   dispose(): Promise<void>
 }
@@ -460,6 +462,9 @@ export function createPetBridge(deps: PetBridgeDeps): PetBridge {
       }
       if (event.type === 'done') runs.delete(event.runId)
       void applyStanding().catch(warnError)
+    },
+    reconnect() {
+      if (settings && client && !connected) void health(generation).catch(warnError)
     },
     test,
     dispose,

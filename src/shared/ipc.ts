@@ -12,7 +12,7 @@ import type {
   UsageSummary,
 } from './ai'
 import type { PersonaId, PersonaSections } from './persona'
-import type { PetSettings, PetTestResult } from './pet'
+import type { PetLaunchStatus, PetSettings, PetTestResult } from './pet'
 import type { ActionMode, Checkin, ContextStrategy, Energy, ProfileFile, Task, TasksFile, TimelineItem } from './schema'
 import type {
   AppState,
@@ -112,6 +112,10 @@ export interface IpcMap {
   'pet:save': { req: PetSettings; res: PetSettings }
   /** 用给定的地址和宠物 id 试连一次，不保存 */
   'pet:test': { req: { baseUrl: string; petId: string }; res: PetTestResult }
+  /** 桌宠有没有在运行、是不是 Butler 启动的（设置页隔几秒问一次） */
+  'pet:status': { req: void; res: PetLaunchStatus }
+  /** 现在就按启动文件把桌宠启动起来（已经在运行就不动）。最多等几秒，之后用 pet:status 看进展 */
+  'pet:launch': { req: void; res: PetLaunchStatus }
 }
 
 export type Channel = keyof IpcMap
@@ -168,6 +172,8 @@ const channelTable = {
   'pet:get': true,
   'pet:save': true,
   'pet:test': true,
+  'pet:status': true,
+  'pet:launch': true,
 } as const satisfies Record<Channel, true>
 
 export const CHANNELS = Object.keys(channelTable) as Channel[]

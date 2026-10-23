@@ -10,11 +10,13 @@ import { createSession } from './app/session'
 import { buildToday } from './app/snapshots'
 import { createTicker } from './app/ticker'
 import { buildTrayModel, performTrayAction } from './app/trayModel'
-import { checkPetSettings, normalizePetSettings } from '../shared/pet'
+import { checkPetSettings, DEFAULT_PET_SETTINGS, normalizePetSettings, type PetSettings } from '../shared/pet'
 import { DomainError } from './domain/errors'
 import { createHandlers } from './ipc'
 import { createPetBridge, type PetBridge } from './pet/bridge'
+import { createPetClient } from './pet/client'
 import type { PetControl } from './pet/control'
+import { createPetLauncher } from './pet/launcher'
 import { registerIpc } from './ipc/register'
 import { showNotification } from './shell/notify'
 import { createTray, type TrayController } from './shell/tray'
@@ -106,6 +108,12 @@ async function start(): Promise<void> {
     openWindow: () => showWindow(window),
     onWarn: log,
   })
+  let petConfig: PetSettings = DEFAULT_PET_SETTINGS // 当前生效的桌宠设置，启动器据此判断桌宠有没有在运行
+  const launcher = createPetLauncher({
+    isUp: () => createPetClient({ baseUrl: petConfig.baseUrl, petId: petConfig.petId, timeoutMs: 1000 }).ping(),
+    onUp: () => pet?.reconnect(),
+    onWarn: log,
+  })
   const petControl: PetControl = {
     get: async () => (await configStore.read()).pet,
     async save(next) {
@@ -113,10 +121,15 @@ async function start(): Promise<void> {
       if (problem) throw new DomainError('invalid', problem)
       const clean = normalizePetSettings(next)
       await configStore.write({ pet: clean })
+      petConfig = clean
       pet?.configure(clean)
+      if (!clean.enabled) await launcher.stopOwn() // 关掉桌宠接入，Butler 自己启动的那个也一起停
+      else if (clean.autoStart) void launcher.ensure(clean.launcher, 0)
       return clean
     },
     test: async (input) => (pet ? pet.test(input) : { ok: false, message: '还没准备好，请稍后再试' }),
+    status: () => launcher.status(),
+    launch: () => launcher.ensure(petConfig.launcher, 15_000),
   }
 
   async function updateTray(): Promise<void> {
@@ -141,7 +154,11 @@ async function start(): Promise<void> {
     event.preventDefault()
     cleanedUp = true
     void Promise.allSettled([
-      pet?.dispose(), // 清掉桌宠上的状态、菜单项和锁
+      // 先清掉桌宠上的状态、菜单项和锁，再停 Butler 自己启动的那个桌宠
+      (async () => {
+        await pet?.dispose()
+        await launcher.stopOwn()
+      })(),
       session.close().catch((error: unknown) => log(`关闭工作区失败：${String(error)}`)),
     ]).finally(() => app.quit())
   })
@@ -151,7 +168,9 @@ async function start(): Promise<void> {
   Menu.setApplicationMenu(null)
   registerIpc(ipcMain, createHandlers(session, platform, ai, petControl), isTrustedSender)
   await session.restore()
-  pet.configure((await configStore.read()).pet)
+  petConfig = (await configStore.read()).pet
+  pet.configure(petConfig)
+  if (petConfig.enabled && petConfig.autoStart) void launcher.ensure(petConfig.launcher, 0) // 桌宠没在运行就启动它
 
   const icon = nativeImage.createFromBuffer(makeIconPng(256))
   window = createMainWindow({ icon, isQuitting: () => quitting, startHidden: process.argv.includes(HIDDEN_FLAG) })

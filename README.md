@@ -77,3 +77,7 @@ npm run dist         # 在 release/ 下生成安装包
 ## 还没做
 
 手机上的一键起床 / 睡前打卡（计划里的第二版）；macOS / Linux 的安装包；安装包签名。
+
+## 许可证
+
+[MIT](LICENSE)

@@ -59,14 +59,11 @@
 npm install
 npm run dev          # 开发模式
 npm run typecheck
-npm test             # 单元和界面测试
-npm run test:e2e     # 先构建，再用 Playwright 启动真实的 Electron 跑一遍
 npm run dist         # 在 release/ 下生成安装包
 ```
 
 - 国内网络下载 Electron、打包工具慢或失败时：`npm install` 用的 Electron 镜像已经写在 `package.json` 的 `config` 里；打包前再设置环境变量 `ELECTRON_BUILDER_BINARIES_MIRROR=https://npmmirror.com/mirrors/electron-builder-binaries/`。
 - 图标是程序自己画的（`src/main/app/icon.ts`），改完后 `npm run icon` 重新生成 `build/icon.png`。
-- 测装好的版本：装好后 `BUTLER_INSTALLED_EXE=<装好的 Butler.exe> npx playwright test tests/e2e/installed.spec.ts`。
 - 设计和实施计划在 `docs/superpowers/`。
 
 ## 还没做

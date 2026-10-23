@@ -4,7 +4,7 @@
   "description": "Butler 个人管家桌面客户端",
   "private": true,
   "author": "CXI9966",
-  "license": "MIT",
+  "license": "PolyForm-Noncommercial-1.0.0",
   "type": "module",
   "main": "out/main/index.js",
   "config": {

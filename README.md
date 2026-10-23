@@ -80,4 +80,4 @@ npm run dist         # 在 release/ 下生成安装包
 
 ## 许可证
 
-[MIT](LICENSE)
+[PolyForm Noncommercial 1.0.0](LICENSE)：个人使用、学习研究、兴趣项目，以及教育、公益等非营利机构可以免费使用、修改和分发，不能用于商业目的。源码是公开的，但按开源促进会（OSI）的定义，它不算“开源”许可证。

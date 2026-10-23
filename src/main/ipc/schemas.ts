@@ -15,7 +15,7 @@ import {
 /** 界面传来的请求参数的校验。界面是我们自己的代码，这里是最后一道防线 */
 export const schemas = {
   folder: z.string().min(1),
-  persona: z.enum(['coach', 'gentle', 'strict']),
+  persona: z.enum(['coach', 'gentle', 'strict', 'whale']),
   date: YMD,
   checkinType: z.enum(['wake', 'sleep']),
   energy: Energy.nullable(),

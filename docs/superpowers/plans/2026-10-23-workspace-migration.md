@@ -613,9 +613,9 @@ git commit -m "feat(ui): move the workspace from the settings page"
 
 ### Task 5: 在真实的 Electron 里验证（脚本放在仓库外，用完删除）
 
-**Files:** Create `C:\Users\ASUS\AppData\Local\Temp\butler-verify\verify-migrate.mjs`（不进仓库）
+**Files:** Create `%TEMP%\butler-verify-migrate.mjs`（系统临时目录，不进仓库）
 
-脚本用 `createRequire('D:/dev/butler-app/package.json')('@playwright/test')` 取 `_electron`，去掉环境变量 `ELECTRON_RUN_AS_NODE` 后启动 `D:/dev/butler-app`（读 `out/`，所以先构建）。`BUTLER_USER_DATA_DIR` 和 `BUTLER_DEFAULT_WORKSPACE` 都指向系统临时目录下新建的文件夹，不会碰 `%APPDATA%\butler` 和 `Desktop\日程`。用 `app.evaluate(({ dialog }, folder) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [folder] }) }, folder)` 代替系统的选文件夹窗口，用 `window.evaluate(() => window.butler.invoke(...))` 造数据和查结果。
+脚本用 `createRequire('D:/dev/butler-app/package.json')('@playwright/test')` 取 `_electron`，去掉环境变量 `ELECTRON_RUN_AS_NODE` 后启动 `D:/dev/butler-app`（读 `out/`，所以先构建）。`BUTLER_USER_DATA_DIR` 和 `BUTLER_DEFAULT_WORKSPACE` 都指向系统临时目录下新建的文件夹，不会碰真实的 `%APPDATA%\butler` 和正在用的工作区。用 `app.evaluate(({ dialog }, folder) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [folder] }) }, folder)` 代替系统的选文件夹窗口，用 `window.evaluate(() => window.butler.invoke(...))` 造数据和查结果。
 
 - [ ] **Step 1: 构建**：`npm run build`，期望退出码 0。
 - [ ] **Step 2: 写脚本，依次覆盖四种情况，每项打印 PASS 或 FAIL**
@@ -623,7 +623,7 @@ git commit -m "feat(ui): move the workspace from the settings page"
   - B. 选非空文件夹：期望提示“不是空的”，没有“迁移”按钮，配置没变。
   - C. 切换到已有工作区：在新位置里选回旧文件夹，期望出现“切换”并成功，设置页显示旧路径，旧文件夹的任务里没有迁移后新增的那个。
   - D. 复制中途失败：用 PowerShell 以 `FileShare.None` 独占打开旧工作区的 `课表.md`（它排在 `data` 和 `管家人格.md` 之后），先确认 Node 读它会报错；再迁移到两层都不存在的路径。期望：页面顶部出现“迁移失败”；新位置的两层文件夹都被清掉；配置没变；程序还能新增任务，且写进旧文件夹。
-- [ ] **Step 3: 运行**：`node C:/Users/ASUS/AppData/Local/Temp/butler-verify/verify-migrate.mjs`，期望四项全部 PASS，退出码 0。有 FAIL 就按输出修代码，重新构建再跑。
+- [ ] **Step 3: 运行**：`node "%TEMP%\butler-verify-migrate.mjs"`（在仓库根目录运行），期望四项全部 PASS，退出码 0。有 FAIL 就按输出修代码，重新构建再跑。
 - [ ] **Step 4: 清理**：删掉脚本目录和脚本建的临时文件夹；确认 `git status` 里没有多出来的文件，也没有残留的 Electron 进程。
 
 ### Task 6: 收尾

@@ -41,7 +41,7 @@
 
 ## 桌宠
 
-Butler 可以接上本机运行的桌宠 [dsh-pet](https://github.com/PC2005-cloud/dsh-pet)。它需要你自己安装并运行（比如 `npm install -g dsh-pet` 之后运行 `dsh-pet-standalone`）。设置页 → “桌宠”：填接口地址（默认 `http://127.0.0.1:3080/dsh-pet-7340`，只能是本机）和宠物 id（默认 `main`），点“测试连接”，再勾“启用桌宠”并保存。这些设置存在这台电脑上，不在工作区里。
+Butler 可以接上本机运行的桌宠 [dsh-pet](https://github.com/PC2005-cloud/dsh-pet)。它需要你自己安装并运行（比如 `npm install -g dsh-pet` 之后运行 `dsh-pet-standalone`）。设置页 → “桌宠”：填接口地址（默认 `http://127.0.0.1:3080/dsh-pet-7340`，只能是本机）和宠物 id（默认 `main`），点“测试连接”，再勾“启用桌宠”并保存。这些设置存在这台电脑上，不在工作区里。独立运行的 dsh-pet 每次启动都会换访问令牌，Butler 会自动从它写在 `DSH_HOME` 下的 `dsh-pet/standalone-runtime.json`（没设 `DSH_HOME` 就是用户目录下的 `.dsh`）里读，不用手动填。
 
 - **状态**：到点提醒了还没办，桌宠“等待”；管家在回复时“思考”，出错时“报错”。
 - **右键菜单**：桌宠右键菜单的“更多”里有起床打卡、睡前打卡、完成今天的任务、打开 Butler，和托盘菜单是同一套。

@@ -33,6 +33,8 @@ export interface ClientOptions {
   /** 普通调用的超时，默认 1500 毫秒 */
   timeoutMs?: number
   fetch?: typeof fetch
+  /** 访问令牌（独立运行的 dsh-pet 的写请求需要）；每次请求前取一次，因为桌宠重启会换 */
+  token?: () => Promise<string | undefined>
 }
 
 type Reply = { ok: true; body: Record<string, unknown> } | Fail
@@ -50,10 +52,14 @@ export function createPetClient(options: ClientOptions): PetClient {
     const timeout = AbortSignal.timeout(init.timeoutMs ?? timeoutMs)
     const signal = init.signal ? AbortSignal.any([timeout, init.signal]) : timeout
     try {
+      const headers: Record<string, string> = {}
+      if (init.body !== undefined) headers['content-type'] = 'application/json'
+      const token = await options.token?.()
+      if (token) headers['x-dsh-pet-token'] = token
       const response = await doFetch(`${base}${path}`, {
         method,
         signal,
-        headers: init.body === undefined ? undefined : { 'content-type': 'application/json' },
+        headers: Object.keys(headers).length > 0 ? headers : undefined,
         body: init.body === undefined ? undefined : JSON.stringify(init.body),
       })
       const raw = response.status === 204 ? '' : await response.text()
@@ -64,6 +70,7 @@ export function createPetClient(options: ClientOptions): PetClient {
         // 不是 JSON，当作没有内容
       }
       const body = (parsed !== null && typeof parsed === 'object' ? parsed : {}) as Record<string, unknown>
+      if (response.status === 403) return { ok: false, reason: 'unauthorized', message: asText(body.error) }
       if (!response.ok) return { ok: false, reason: `http-${response.status}`, message: asText(body.error) }
       if (body.ok === false) return { ok: false, reason: asText(body.reason) ?? 'failed', message: asText(body.message) }
       return { ok: true, body }

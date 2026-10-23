@@ -47,7 +47,7 @@ export default function PetSettings({ act }: { act: Action }) {
     <section className="card" aria-labelledby="pet-title">
       <h2 id="pet-title">桌宠</h2>
       <p className="hint">
-        接上本机运行的 dsh-pet（比如 dsh-pet-standalone）：Butler 里的打卡、任务、提醒会让桌宠有反应，桌宠的右键菜单里可以直接打卡，管家也会用自己的口吻说话。桌宠没开时什么都不会发生。
+        接上本机运行的 dsh-pet（装在 DSH 里，或者独立运行的 dsh-pet-standalone）：Butler 里的打卡、任务、提醒会让桌宠有反应，桌宠的右键菜单里可以直接打卡，管家也会用自己的口吻说话。桌宠没开时什么都不会发生。独立运行的 dsh-pet 每次启动都会换访问令牌，Butler 会自动从它写在 DSH_HOME 下的运行状态文件里读，不用手动填。
       </p>
       <form onSubmit={save}>
         <label className="day-check">

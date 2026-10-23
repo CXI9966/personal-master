@@ -23,7 +23,14 @@
 | 台词 | `POST /broadcast {text, duration}`；被要求占用锁时先 `POST /lock`，用完 `POST /lock/release` |
 | 右键菜单 | `POST /menu/item {owner, labels}`、`GET /menu/events?owner&wait`、`DELETE /menu/item?owner` |
 
-`API.md` 把 `/broadcast` 标成“需锁”，`openapi.yaml` 的 `lock` 参数说明又写“当前没有占用时可以不带”。实现先不带锁，对方回 `lock-required` 才取锁；真机验证后再定。
+`API.md` 把 `/broadcast` 标成“需锁”，`openapi.yaml` 的 `lock` 参数说明又写“当前没有占用时可以不带”。实现先不带锁，对方回 `lock-required` 才取锁。
+
+真机验证（dsh-pet 0.3.8 独立运行）的结果，文档里没写：
+
+- `/broadcast` 不带锁就被接受，锁叶子保持为空，说话时桌宠不会被冻住。
+- 独立运行时，所有写请求（POST、DELETE）都要带请求头 `x-dsh-pet-token`，读请求不用。令牌每次启动随机生成，写在 `$DSH_HOME/dsh-pet/standalone-runtime.json`（没设 `DSH_HOME` 就是用户目录下的 `.dsh`）里，内容有 `port` 和 `token`。
+- Butler 每次请求前读这个文件，只在文件里的端口和接口地址的端口一致时才发送令牌，免得把令牌发给别的服务；读不到就不带，对方回 403，试连会提示是令牌的问题。
+- 装进 DSH 里运行的 dsh-pet 按文档没有鉴权，没有这个文件。这一种没有实测。
 
 ## 3. 设置（这台电脑的设置，存 `config.json`，不进工作区）
 

@@ -6,6 +6,7 @@ import type { Session } from '../app/session'
 import { buildTrayModel, type TrayOutcome } from '../app/trayModel'
 import { createPetClient, type Fail, type PetClient } from './client'
 import { createLineLimiter, describeEvent, pickLine, plainLine, shorten, voiceOf } from './lines'
+import { tokenFor } from './runtime'
 import { diffSummary, summarize, type PetEventKind, type PetSummary } from './summary'
 
 const MENU_OWNER = '管家'
@@ -46,6 +47,12 @@ export interface PetBridge {
 }
 
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms))
+
+const AUTH_HINT =
+  '桌宠拒绝了写入。独立运行的 dsh-pet 每次启动都会换一个访问令牌，Butler 从它写在 DSH_HOME 下的 dsh-pet/standalone-runtime.json 里读取；现在读不到，或者里面的端口和上面的地址对不上。'
+
+/** 把失败原因说成人话（写进日志用） */
+const reasonText = (reason: string): string => (reason === 'unauthorized' ? '被桌宠拒绝了（缺少访问令牌）' : reason)
 
 export function createPetBridge(deps: PetBridgeDeps): PetBridge {
   let settings: PetSettings | null = null
@@ -126,7 +133,7 @@ export function createPetBridge(deps: PetBridgeDeps): PetBridge {
     if (key === applied) return
     const reply = note(desired ? await c.setWorkStatus(desired.state, desired.task) : await c.clearWorkStatus())
     if (reply.ok) applied = key
-    else warnOnce(`status-${reply.reason}`, `写状态失败：${reply.reason}`)
+    else warnOnce(`status-${reply.reason}`, `写状态失败：${reasonText(reply.reason)}`)
   }
 
   /** 过一会儿再按当前情况重写一次常驻状态（success、error 的气泡过去以后） */
@@ -168,7 +175,7 @@ export function createPetBridge(deps: PetBridgeDeps): PetBridge {
       menuKey = key
       menuIds = new Map(entries.map((entry) => [entry.label, entry.id]))
     } else {
-      warnOnce(`menu-${reply.reason}`, `注册右键菜单失败：${reply.reason}`)
+      warnOnce(`menu-${reply.reason}`, `注册右键菜单失败：${reasonText(reply.reason)}`)
     }
   }
 
@@ -211,7 +218,7 @@ export function createPetBridge(deps: PetBridgeDeps): PetBridge {
     let reply = note(await c.broadcast(text, { durationMs: BUBBLE_MS }))
     if (reply.ok) return
     if (reply.reason !== 'lock-required') {
-      warnOnce(`say-${reply.reason}`, `台词没发出去：${reply.reason}`)
+      warnOnce(`say-${reply.reason}`, `台词没发出去：${reasonText(reply.reason)}`)
       return
     }
     const lock = note(await c.acquireLock(BUBBLE_MS + 7000))
@@ -394,18 +401,24 @@ export function createPetBridge(deps: PetBridgeDeps): PetBridge {
       return
     }
     settings = next
-    client = createPetClient({ baseUrl: next.baseUrl, petId: next.petId })
+    client = createPetClient({ baseUrl: next.baseUrl, petId: next.petId, token: () => tokenFor(next.baseUrl) })
     void start(generation).catch(warnError)
   }
 
   async function test(input: { baseUrl: string; petId: string }): Promise<PetTestResult> {
-    const reply = await createPetClient({ ...input, timeoutMs: 3000 }).pets()
+    const probe = createPetClient({ ...input, timeoutMs: 3000, token: () => tokenFor(input.baseUrl) })
+    const reply = await probe.pets()
     if (!reply.ok) {
       if (reply.reason === 'unreachable') return { ok: false, message: '连不上：确认 dsh-pet 已经在运行，地址和端口都对' }
       if (reply.reason === 'http-404') return { ok: false, message: '连上了，但这个地址不像 dsh-pet 的接口（404），检查路径是不是 /dsh-pet-7340' }
       return { ok: false, message: `连上了，但读取失败：${reply.reason}` }
     }
-    if (reply.ids.includes(input.petId)) return { ok: true, message: `已连上，找到宠物“${input.petId}”` }
+    if (reply.ids.includes(input.petId)) {
+      // 读是公开的，写才要令牌：用清掉自己的菜单项（幂等、只动自己的）试一次写
+      const write = await probe.clearMenu(MENU_OWNER)
+      if (!write.ok && write.reason === 'unauthorized') return { ok: false, message: AUTH_HINT }
+      return { ok: true, message: `已连上，找到宠物“${input.petId}”` }
+    }
     if (reply.ids.length === 0) return { ok: true, message: '已连上，但没读到宠物列表' }
     return { ok: false, message: `已连上，但没有叫“${input.petId}”的宠物。现有：${reply.ids.join('、')}` }
   }

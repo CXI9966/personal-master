@@ -3,6 +3,8 @@
 import type { ActionMode, ContextStrategy, ProviderKind } from './schema'
 
 export type AiScene = 'chat' | 'plan' | 'review' | 'weekly'
+/** 用量记在哪个功能名下：四种对话场景，加上桌宠台词 */
+export type UsageFeatureName = AiScene | 'pet'
 
 export interface ChatMessage {
   role: 'user' | 'assistant'
@@ -72,7 +74,7 @@ export interface UsageSummary {
   weekStart: string
   weekEnd: string
   total: UsageTotals
-  byFeature: Partial<Record<AiScene, UsageTotals>>
+  byFeature: Partial<Record<UsageFeatureName, UsageTotals>>
   /** 这一周每一天都有一项，没调用的天是 0 */
   byDay: Array<UsageTotals & { date: string }>
   /** 有的接口不返回 token 数，这些调用只算次数 */

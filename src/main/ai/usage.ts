@@ -1,4 +1,4 @@
-import type { AiScene, UsageSummary, UsageTotals } from '../../shared/ai'
+import type { UsageFeatureName, UsageSummary, UsageTotals } from '../../shared/ai'
 import { PATHS } from '../../shared/paths'
 import { UsageEntry } from '../../shared/schema'
 import type { AppContext } from '../app/context'
@@ -11,7 +11,7 @@ const finite = (n: number | undefined): number | null => (typeof n === 'number' 
 /** 每次调用模型后记一笔 token 数。用量是流水账，不进改动历史（不会顶掉“最近一次改动”） */
 export function logUsage(
   ctx: AppContext,
-  entry: { provider: string; model: string; feature: AiScene; usage?: { inputTokens?: number; outputTokens?: number } },
+  entry: { provider: string; model: string; feature: UsageFeatureName; usage?: { inputTokens?: number; outputTokens?: number } },
 ): Promise<void> {
   return ctx.ws.appendLog(
     PATHS.usage,

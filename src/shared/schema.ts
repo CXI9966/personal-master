@@ -43,7 +43,7 @@ export const LearningCheck = z.looseObject({
 })
 export type LearningCheck = z.infer<typeof LearningCheck>
 
-export const UsageFeature = z.enum(['plan', 'review', 'chat', 'weekly'])
+export const UsageFeature = z.enum(['plan', 'review', 'chat', 'weekly', 'pet'])
 export const UsageEntry = z.looseObject({
   id: Id,
   at: OffsetDateTime,

@@ -97,6 +97,7 @@ export function checkPetSettings(input: PetSettings): string | null {
     if (!/\.(bat|cmd|exe)$/i.test(launcher)) return '启动文件只支持 .bat、.cmd 或 .exe'
     if (/[<>|*?"%&^]/.test(launcher)) return '启动文件的路径里有不能用的字符（< > | * ? " % & ^）'
   }
+  if (input.autoStart && launcher === '') return '要自动启动，先填上桌宠的启动文件（或者点“选择文件…”）'
   return null
 }
 

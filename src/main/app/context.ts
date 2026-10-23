@@ -17,6 +17,8 @@ export interface AppConfig {
  */
 export interface Platform {
   pickFolder(): Promise<string | null>
+  /** 弹出系统的选择文件对话框，取消返回 null */
+  pickFile(filters: Array<{ name: string; extensions: string[] }>): Promise<string | null>
   /** 第一次运行页面里默认填的工作区文件夹 */
   defaultRoot(): string
   readConfig(): Promise<AppConfig>

@@ -100,6 +100,7 @@ export function createHandlers(session: Session, platform: Platform, ai: AiServi
     'pet:get': () => pet.get(),
     'pet:save': (input) => pet.save(s.petSettings.parse(input)),
     'pet:test': (input) => pet.test(s.petTest.parse(input)),
+    'pet:pick': () => platform.pickFile([{ name: '桌宠的启动文件', extensions: ['bat', 'cmd', 'exe'] }]),
     'pet:status': async () => pet.status(),
     'pet:launch': () => pet.launch(),
   }

@@ -112,6 +112,8 @@ export interface IpcMap {
   'pet:save': { req: PetSettings; res: PetSettings }
   /** 用给定的地址和宠物 id 试连一次，不保存 */
   'pet:test': { req: { baseUrl: string; petId: string }; res: PetTestResult }
+  /** 弹出系统的选择文件对话框，选桌宠的启动文件（.bat、.cmd、.exe），取消返回 null */
+  'pet:pick': { req: void; res: string | null }
   /** 桌宠有没有在运行、是不是 Butler 启动的（设置页隔几秒问一次） */
   'pet:status': { req: void; res: PetLaunchStatus }
   /** 现在就按启动文件把桌宠启动起来（已经在运行就不动）。最多等几秒，之后用 pet:status 看进展 */
@@ -172,6 +174,7 @@ const channelTable = {
   'pet:get': true,
   'pet:save': true,
   'pet:test': true,
+  'pet:pick': true,
   'pet:status': true,
   'pet:launch': true,
 } as const satisfies Record<Channel, true>

@@ -57,6 +57,11 @@ async function start(): Promise<void> {
       const result = window ? await dialog.showOpenDialog(window, options) : await dialog.showOpenDialog(options)
       return result.canceled ? null : (result.filePaths[0] ?? null)
     },
+    async pickFile(filters) {
+      const options = { properties: ['openFile' as const], filters }
+      const result = window ? await dialog.showOpenDialog(window, options) : await dialog.showOpenDialog(options)
+      return result.canceled ? null : (result.filePaths[0] ?? null)
+    },
     defaultRoot: () => process.env.BUTLER_DEFAULT_WORKSPACE ?? join(app.getPath('documents'), 'Butler'),
     readConfig: () => configStore.read(),
     writeConfig: (config) => configStore.write(config),

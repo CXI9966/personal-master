@@ -31,6 +31,12 @@ export default function PetSettings({ act }: { act: Action }) {
 
   const launch = (): Promise<boolean> => act.run(async () => setLaunchStatus(await window.butler.invoke('pet:launch')))
 
+  const pickLauncher = (): Promise<boolean> =>
+    act.run(async () => {
+      const file = await window.butler.invoke('pet:pick')
+      if (file) change('launcher', file)
+    })
+
   useEffect(() => {
     if (data && !loaded) {
       setForm(data)
@@ -117,24 +123,32 @@ export default function PetSettings({ act }: { act: Action }) {
         <p className="hint">间隔内发生的事用内置的话回应，另外每小时最多让模型写 6 次。</p>
         <div className="field">
           <label htmlFor="pet-launcher">桌宠的启动文件（完整路径，.bat、.cmd 或 .exe）</label>
-          <input
-            id="pet-launcher"
-            type="text"
-            spellCheck={false}
-            placeholder="比如 C:\tools\dsh-pet\start-pet.bat"
-            value={form.launcher}
-            onChange={(e) => change('launcher', e.target.value)}
-          />
+          <div className="row">
+            <input
+              id="pet-launcher"
+              type="text"
+              spellCheck={false}
+              placeholder="比如 C:\tools\dsh-pet\start-pet.bat"
+              value={form.launcher}
+              onChange={(e) => change('launcher', e.target.value)}
+            />
+            <button type="button" disabled={act.busy} onClick={pickLauncher}>
+              选择文件…
+            </button>
+          </div>
         </div>
         <label className="day-check">
-          <input
-            type="checkbox"
-            disabled={off || form.launcher.trim() === ''}
-            checked={form.autoStart}
-            onChange={(e) => change('autoStart', e.target.checked)}
-          />
+          <input type="checkbox" checked={form.autoStart} onChange={(e) => change('autoStart', e.target.checked)} />
           打开 Butler 时，桌宠没在运行就用这个文件启动它（Butler 退出时只关它自己启动的那个）
         </label>
+        {form.autoStart && (off || form.launcher.trim() === '') && (
+          <p className="hint" role="status">
+            {off ? '上面的“启用桌宠”还没勾，自动启动现在不会生效。' : '还没填启动文件，保存时会提示；填上或者点“选择文件…”。'}
+          </p>
+        )}
+        {form.launcher.trim() !== '' && form.launcher.trim() !== (data?.launcher ?? '') && (
+          <p className="hint">改过启动文件，先点“保存桌宠设置”，下面的“现在启动桌宠”才能用。</p>
+        )}
         <p className="hint">Butler 只负责启动，不负责下载桌宠。桌宠要你先自己装好，启动文件指到它就行。</p>
         {launchStatus && (
           <p role="status" className={launchStatus.state === 'failed' || launchStatus.state === 'missing' ? 'error' : 'hint'}>

@@ -29,7 +29,20 @@ export default function PetSettings({ act }: { act: Action }) {
     }
   }, [])
 
-  const launch = (): Promise<boolean> => act.run(async () => setLaunchStatus(await window.butler.invoke('pet:launch')))
+  // 表单和已保存的设置有没有不一样；不一样时“启动”按钮会先保存再启动
+  const dirty = data !== null && (Object.keys(DEFAULT_PET_SETTINGS) as Array<keyof Settings>).some((key) => form[key] !== data[key])
+
+  const launch = (): Promise<boolean> =>
+    act.run(async () => {
+      if (form.launcher.trim() === '') throw new Error('先填上桌宠的启动文件，或者点“选择文件…”')
+      if (dirty) {
+        setForm(await window.butler.invoke('pet:save', form)) // 启动用的是已保存的启动文件，所以先存
+        reload()
+        setResult(null)
+        setSaved(true)
+      }
+      setLaunchStatus(await window.butler.invoke('pet:launch'))
+    })
 
   const pickLauncher = (): Promise<boolean> =>
     act.run(async () => {
@@ -146,9 +159,6 @@ export default function PetSettings({ act }: { act: Action }) {
             {off ? '上面的“启用桌宠”还没勾，自动启动现在不会生效。' : '还没填启动文件，保存时会提示；填上或者点“选择文件…”。'}
           </p>
         )}
-        {form.launcher.trim() !== '' && form.launcher.trim() !== (data?.launcher ?? '') && (
-          <p className="hint">改过启动文件，先点“保存桌宠设置”，下面的“现在启动桌宠”才能用。</p>
-        )}
         <p className="hint">Butler 只负责启动，不负责下载桌宠。桌宠要你先自己装好，启动文件指到它就行。</p>
         {launchStatus && (
           <p role="status" className={launchStatus.state === 'failed' || launchStatus.state === 'missing' ? 'error' : 'hint'}>
@@ -171,13 +181,8 @@ export default function PetSettings({ act }: { act: Action }) {
           </p>
         )}
         <div className="actions">
-          <button
-            type="button"
-            disabled={act.busy || form.launcher.trim() === '' || form.launcher.trim() !== (data?.launcher ?? '')}
-            title="按已保存的启动文件启动；刚改过的话先保存"
-            onClick={launch}
-          >
-            现在启动桌宠
+          <button type="button" disabled={act.busy} onClick={launch}>
+            {dirty ? '保存并启动桌宠' : '现在启动桌宠'}
           </button>
           <button type="button" disabled={act.busy} onClick={test}>
             测试连接
